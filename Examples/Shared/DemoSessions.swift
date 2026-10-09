@@ -56,7 +56,7 @@ import HotMicPlayerCore
                 guard let self, !self.stopped else { return }
                 self.continuation.yield(.stream(liveDate: self.origin, duration: self.id == "sample-6" ? 1800 : 5.05))
                 self.owner?.record("timingArrived", ["id": self.id])
-                let batch = [self.chat("batch", "Sam", "This arrived in a chat batch", at: 0.5)] + (1..<50).map {
+                let batch = [self.chat("batch", "Sample participant", "This arrived in a chat batch", at: 0.5)] + (1..<50).map {
                     self.chat("burst-\($0)", "Replay viewer", "Batch message \($0)", at: 0.5 + Double($0) / 50)
                 }
                 self.continuation.yield(.chat(messages: batch, reactions: []))
@@ -81,13 +81,13 @@ import HotMicPlayerCore
                 self.continuation.yield(.pollDeleted("\(self.id)-poll"))
                 self.owner?.record("scriptDeletions", ["id": self.id])
                 try await Task.sleep(for: .milliseconds(200))
-                self.continuation.yield(.chat(messages: [self.chat("batch", "Sam", "Deleted late echo", at: 0.5)], reactions: []))
+                self.continuation.yield(.chat(messages: [self.chat("batch", "Sample participant", "Deleted late echo", at: 0.5)], reactions: []))
                 self.continuation.yield(.poll(self.poll()))
                 self.owner?.record("lateModeratedEcho", ["id": self.id])
             } catch { }
         }
         return CoreSessionSnapshot(liveDate: id == "sample-7" ? nil : origin, duration: id == "sample-1" ? nil : (id == "sample-6" ? 1800 : 5.05),
-                                   userID: "demo-viewer", messages: [chat("welcome", "Mara", "Welcome to \(id)", at: 0)], polls: [])
+                                   userID: "demo-viewer", messages: [chat("welcome", "Sample host", "Welcome to \(id)", at: 0)], polls: [])
     }
     func stop() async {
         guard !stopped else { return }

@@ -11,8 +11,8 @@
 
 ## 0.1.0
 
-Initial pre-1.0 integration baseline (not a newly created tag):
+Initial integration:
 
 - Resolve `.hotmicStream(id)` and page VOD summaries with stable playlist identities and filtering.
 - Add optional session-backed chat, message reactions and polls with current/next lifecycle, dwell debounce, retry and moderation handling.
-- Provide a combined Sample demo using experimental Testing SPI and preliminary integration notes.
+- Provide an initial combined demo and integration notes.

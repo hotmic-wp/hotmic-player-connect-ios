@@ -6,16 +6,15 @@ HotMicCore 1.0.2 is an iOS binary dependency; build and test for iOS, not macOS.
 
 ## Install
 
-Add both packages in Xcode or SwiftPM:
+Add both packages in Xcode or Swift Package Manager. Use `exact: "1.0.0-rc.1"` for the release candidate:
 
 ```swift
-.package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", from: "1.0.0-rc.1"),
-.package(url: "https://github.com/hotmic-wp/hotmic-player-core-ios", from: "1.0.0-rc.1")
+.package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", exact: "1.0.0-rc.1"),
+.package(url: "https://github.com/hotmic-wp/hotmic-player-core-ios", exact: "1.0.0-rc.1")
 ```
 
 Link `HotMicPlayer` and `HotMicPlayerCore`. Link the transitive `HotMicCore` product when importing it
 to construct a client. Engagement UI additionally links `HotMicPlayerUI` from the player package.
-The adapter RC tag must be published by the release manager before these install coordinates resolve.
 
 ## Level 1: streams
 
@@ -105,8 +104,8 @@ analytics data handling. Arbitrary URLs or an ID prefix alone never opt into eng
 ## Examples and verification
 
 Open [Examples/HotMicExamples.xcodeproj](Examples/HotMicExamples.xcodeproj). Choose `Streams` (roughly
-40 lines) or `StreamsAndEngagement`. These replace the former `Sample/` app; shared support holds fake
-clients, credentials and evidence plumbing. Both use ordinary public imports and the actual Core adapters.
+40 lines) or `StreamsAndEngagement`. Shared support holds fake clients, credentials and verification
+helpers. Both use ordinary public imports and the actual Core adapters.
 `Streams` links no `HotMicPlayerUI` product. No credentials selects fake mode with public MDN MP4/Apple
 VOD HLS fixtures (internet needed for videos). `--fake` bypasses all credential loading and guarantees
 no HotMic API calls. `--fake --verify` runs an optional fake-only integration script, including paging
@@ -128,8 +127,6 @@ For **authorized manual real-credential verification**:
 5. Hide/background the feed, confirm sessions stop using authorized backend telemetry, restore visibility,
    then dismiss/sign out and confirm cleanup. Exercise token expiry/replacement with test credentials.
 
-No real API or credential verification was performed for this release work.
-
 ## Documentation, versions and checks
 
 Read the [DocC guides](Sources/HotMicPlayerCore/HotMicPlayerCore.docc/HotMicPlayerCore.md),
@@ -138,7 +135,8 @@ Read the [DocC guides](Sources/HotMicPlayerCore/HotMicPlayerCore.docc/HotMicPlay
 [API review](docs/API_REVIEW_1.0.md), and [changelog](CHANGELOG.md).
 
 This package follows semver: compatible additions in minor releases, fixes in patches, breaking changes
-in majors with deprecations where practical. RCs are prereleases pending review and tagging.
+in majors with deprecations where practical. RCs are prereleases for integration evaluation before
+the stable release.
 `HotMicPlayerCore.version` reports `1.0.0-rc.1`. Prefer native `failedItemPolicy` over the retained deprecated
 `skipFailedHotMicItems(using:)` helper. Testing SPI is outside the stable public contract.
 

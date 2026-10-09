@@ -1,5 +1,6 @@
 #!/bin/bash
 set -euo pipefail
+bash .github/scripts/check-partner-docs.sh
 mkdir -p .validation
 # Surface useful build diagnostics if a redirected command fails.
 trap 'result=$?; if (( result != 0 )); then tail -n 80 .validation/*.log; fi' EXIT

@@ -6,10 +6,11 @@ Integrate a paged HotMic VOD feed using the player and Core adapter.
 
 Add both packages and link the `HotMicPlayer` and `HotMicPlayerCore` products.
 Link `HotMicCore` too when importing it to create your authenticated client.
+Use `exact: "1.0.0-rc.1"` for the release candidate.
 
 ```swift
-.package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", from: "1.0.0-rc.1"),
-.package(url: "https://github.com/hotmic-wp/hotmic-player-core-ios", from: "1.0.0-rc.1")
+.package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", exact: "1.0.0-rc.1"),
+.package(url: "https://github.com/hotmic-wp/hotmic-player-core-ios", exact: "1.0.0-rc.1")
 ```
 
 ## Build a feed
