@@ -1,7 +1,8 @@
 import XCTest
 import HotMicPlayer
 import HotMicCore
-@_spi(Testing) @testable import HotMicPlayerCore
+@testable import HotMicPlayerCore
+@testable import HotMicPlayerCoreTesting
 
 @MainActor private final class Sessions: CoreSessionFactory {
     var sessions: [String: [Session]] = [:]
@@ -12,6 +13,7 @@ import HotMicCore
     var failStart = false
     var failures: [String: [HotMicError]] = [:]
     var missingOrigins: Set<String> = []
+    var missingDurations: Set<String> = []
     var heldStopIDs: Set<String> = []
     var stopGates: [String: CheckedContinuation<Void, Never>] = [:]
     var holdStarts: Set<String> = []
@@ -48,7 +50,7 @@ import HotMicCore
         }
         continuation.yield(.connection(.connected))
         if owner.holdStarts.contains(id) { await withCheckedContinuation { startGate = $0 } }
-        return CoreSessionSnapshot(liveDate: owner.missingOrigins.contains(id) ? nil : owner.origin, duration: 42, userID: "viewer",
+        return CoreSessionSnapshot(liveDate: owner.missingOrigins.contains(id) ? nil : owner.origin, duration: owner.missingDurations.contains(id) ? nil : 42, userID: "viewer",
                                    messages: [chat("history", at: 5, counts: ["👍": 2])], polls: [poll()])
     }
     func stop() async {
@@ -295,6 +297,52 @@ import HotMicCore
         try await empty.sendChat("Own send has a playback clock", at: 7)
         XCTAssertEqual(empty.messages(near: 7).first?.offset, 7)
         await leave(source, factory, [missing])
+
+        // No snapshot duration or item hint: retain raw history, preserve sends, then recover.
+        for path in ["stream-update", "resolved-item"] {
+            factory.missingDurations.insert(path)
+            let unknown = HMMediaItem.hotmicStream(path)
+            let retained = source.timeline(for: unknown) as! CoreTimeline
+            let pending = HMEngagement(item: unknown, timeline: retained, source: source)
+            source.engagementDidLoad(pending); source.didBecomeCurrent(unknown)
+            await waitUntil { retained.messages["history"] != nil }
+            XCTAssertEqual(retained.duration, 0)
+            XCTAssertTrue(retained.events(in: 0...42).isEmpty)
+            XCTAssertTrue(pending.polls.isEmpty)
+            try await pending.sendChat("Before duration", at: 7)
+            XCTAssertEqual(retained.events(in: 7...7).first?.offset, 7)
+            let session = factory.latest(path)
+            session.continuation.yield(.chat(messages: [session.chat("deleted-pending", at: 3), session.chat("outside", at: 43)], reactions: []))
+            session.continuation.yield(.messageDeleted("deleted-pending"))
+            session.continuation.yield(.connection(.reconnecting(attempt: 60)))
+            await waitUntil { source.connectionState(for: unknown) == .reconnecting(attempt: 60) }
+            if path == "stream-update" {
+                session.continuation.yield(.stream(liveDate: factory.origin, duration: 42))
+                await waitUntil { retained.duration == 42 }
+            } else {
+                let resolved = HMMediaItem(id: unknown.id, url: URL(string: "https://example.com/replay.mp4")!,
+                                          durationHint: 42, metadata: unknown.metadata)
+                let resolvedEngagement = HMEngagement(item: resolved, timeline: retained, source: source)
+                source.engagementDidLoad(resolvedEngagement)
+                XCTAssertEqual(retained.duration, 42)
+                XCTAssertTrue(source.timeline(for: resolved) === retained)
+                // Reattach the query owner used below; it now sees the same recovered mapping.
+                source.engagementDidLoad(pending)
+            }
+            XCTAssertTrue(pending.messages(near: 42, lookback: 42, limit: 100).contains { $0.id == "history" && $0.offset == 5 })
+            XCTAssertTrue(retained.events(in: 0...42).contains { $0.id == "server-1" && $0.offset == 7 })
+            XCTAssertFalse(retained.events(in: 0...42).contains { ["outside", "deleted-pending"].contains($0.id) })
+            XCTAssertEqual(pending.polls.first?.opensAt, 2)
+            await leave(source, factory, [unknown])
+        }
+        let bounded = CoreTimeline(streamID: "bounded", duration: 0, liveDate: factory.origin)
+        for index in 0..<(CoreTimeline.messageCapacity + 10) {
+            bounded.remember(.init(id: "raw-\(index)", author: "Replay", text: "History", createdAt: factory.origin.addingTimeInterval(5)))
+        }
+        XCTAssertEqual(bounded.messages.count, CoreTimeline.messageCapacity)
+        bounded.retime(liveDate: factory.origin, duration: 42)
+        XCTAssertEqual(bounded.events(in: 0...42).count, CoreTimeline.messageCapacity)
+        XCTAssertFalse(bounded.events(in: 0...42).contains { $0.id == "raw-0" })
     }
 
     func testNextDebounceAndConcurrentStopsPreserveCapacity() async {

@@ -1,0 +1,721 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		030AAB75ACB69F436857D8DC /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8A6B73C9257F99FA90E1452 /* Foundation.framework */; };
+		115A8CA906AAA5F3D251694C /* ExampleIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A92EC75B1E39D5BA0122A28 /* ExampleIntegration.swift */; };
+		15534BDF79C9E65D829A4C69 /* HotMicPlayerCoreTesting in Frameworks */ = {isa = PBXBuildFile; productRef = 29747CEA9FFB2E7D11851FC7 /* HotMicPlayerCoreTesting */; };
+		2BA44F0F39F511520002A6CA /* HotMicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 1F0C599F5B2AAC9056CADABA /* HotMicPlayer */; };
+		2F0AAE83ED2A4D4611DE0D40 /* HotMicPlayerCore in Frameworks */ = {isa = PBXBuildFile; productRef = EF4E0FC32C71A85FB507549B /* HotMicPlayerCore */; };
+		3F7DB421C2DA5CD0A979B755 /* DemoClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4CFBDDC6E62B25390D77B96 /* DemoClient.swift */; };
+		3FC90BD64A4AF356D8C8DA3D /* HotMicPlayerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 895902C865B7619165DF2B03 /* HotMicPlayerCore */; };
+		59B882EA2E40A659F32308BE /* DemoSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 037643EC6DFE024D2AE9A4D0 /* DemoSessions.swift */; };
+		633853252305DA28C3DB720D /* HotMicPlayerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 4925A40E11F2E3ACCA1463F2 /* HotMicPlayerCore */; };
+		74B9D51C0AFF3494A39A0A6B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8A6B73C9257F99FA90E1452 /* Foundation.framework */; };
+		78013724B2E95B280ABE6E8C /* HotMicPlayerCoreTesting in Frameworks */ = {isa = PBXBuildFile; productRef = FE8ECCF529E08662BF84882B /* HotMicPlayerCoreTesting */; };
+		7DE1B4078D1F9869D1536548 /* HotMicCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8D233687776A517CEA00220B /* HotMicCore */; };
+		835BF04FD27992211139F713 /* HotMicPlayerUI in Frameworks */ = {isa = PBXBuildFile; productRef = 017D1D96D5554CC74A2C8A32 /* HotMicPlayerUI */; };
+		89FE1D35E0E7A3F576BDD4F1 /* HotMicPlayerCoreTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D84E6B6B97616BAC7611BCBC /* HotMicPlayerCoreTesting */; };
+		9ACD401D19D16ADF483F21D1 /* HotMicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 73F893DBB93C4149530FB5A8 /* HotMicPlayer */; };
+		9E487F323669ED3A3D5C7D79 /* CoreStreamsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87219D43E3D6C95B8192BB90 /* CoreStreamsTests.swift */; };
+		9FC890CF8DC3B0E0CD490420 /* ExampleIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60EE9AF44FE346A478F97AB7 /* ExampleIntegration.swift */; };
+		A0B2A05FB2A686BD280437BE /* DemoSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC4D530B25267BFB4CF1649C /* DemoSessions.swift */; };
+		A803DD30DCA1D6E28846C125 /* HotMicCore in Frameworks */ = {isa = PBXBuildFile; productRef = C8A3D9813DDD710D8BF43999 /* HotMicCore */; };
+		B04535A9E527F1E64C7929D7 /* DemoClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6AA0E8968AC37A93A8BD8E6 /* DemoClient.swift */; };
+		B5307CC64D8285D2F928C54C /* StreamsApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 400720B52C967AAFCDCAE4A2 /* StreamsApp.swift */; };
+		BD1AB4CCD370E2EA814E1DB5 /* CoreInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1CBC71E7111F4AA11416A7E /* CoreInteractionTests.swift */; };
+		BEF5C2B9FBB8325BB5257B74 /* HotMicCore in Frameworks */ = {isa = PBXBuildFile; productRef = AC2BBA730B0FF5F978EE0528 /* HotMicCore */; };
+		CEF642E5B7317C997A74F0E8 /* StreamsAndEngagementApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 72934B50949AE9460B7C68C5 /* StreamsAndEngagementApp.swift */; };
+		DF4B58FF490B8B58ED4538EE /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F8A6B73C9257F99FA90E1452 /* Foundation.framework */; };
+		EDE939A2A44A9A04A81B7278 /* HotMicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 62145447A9938692CEA46D50 /* HotMicPlayer */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		037643EC6DFE024D2AE9A4D0 /* DemoSessions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DemoSessions.swift; sourceTree = "<group>"; };
+		206A2352109B7CF757E0C443 /* Streams.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Streams.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		400720B52C967AAFCDCAE4A2 /* StreamsApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StreamsApp.swift; sourceTree = "<group>"; };
+		5A92EC75B1E39D5BA0122A28 /* ExampleIntegration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExampleIntegration.swift; sourceTree = "<group>"; };
+		60EE9AF44FE346A478F97AB7 /* ExampleIntegration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ExampleIntegration.swift; sourceTree = "<group>"; };
+		72934B50949AE9460B7C68C5 /* StreamsAndEngagementApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = StreamsAndEngagementApp.swift; sourceTree = "<group>"; };
+		87219D43E3D6C95B8192BB90 /* CoreStreamsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreStreamsTests.swift; sourceTree = "<group>"; };
+		9742D006E0CADCA80053760F /* StreamsAndEngagement.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StreamsAndEngagement.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A7599A6A6960662D512A3EA1 /* HotMicPlayerCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HotMicPlayerCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		AC4D530B25267BFB4CF1649C /* DemoSessions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DemoSessions.swift; sourceTree = "<group>"; };
+		C1CBC71E7111F4AA11416A7E /* CoreInteractionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreInteractionTests.swift; sourceTree = "<group>"; };
+		C4CFBDDC6E62B25390D77B96 /* DemoClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DemoClient.swift; sourceTree = "<group>"; };
+		D6AA0E8968AC37A93A8BD8E6 /* DemoClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DemoClient.swift; sourceTree = "<group>"; };
+		F8A6B73C9257F99FA90E1452 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		05F07152E7EF018255DD7ACC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				74B9D51C0AFF3494A39A0A6B /* Foundation.framework in Frameworks */,
+				633853252305DA28C3DB720D /* HotMicPlayerCore in Frameworks */,
+				2BA44F0F39F511520002A6CA /* HotMicPlayer in Frameworks */,
+				A803DD30DCA1D6E28846C125 /* HotMicCore in Frameworks */,
+				78013724B2E95B280ABE6E8C /* HotMicPlayerCoreTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		2D4D9392156DFA33AAC2A9C7 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				030AAB75ACB69F436857D8DC /* Foundation.framework in Frameworks */,
+				2F0AAE83ED2A4D4611DE0D40 /* HotMicPlayerCore in Frameworks */,
+				EDE939A2A44A9A04A81B7278 /* HotMicPlayer in Frameworks */,
+				BEF5C2B9FBB8325BB5257B74 /* HotMicCore in Frameworks */,
+				835BF04FD27992211139F713 /* HotMicPlayerUI in Frameworks */,
+				89FE1D35E0E7A3F576BDD4F1 /* HotMicPlayerCoreTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		9F52D5BF6343CF499565E527 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DF4B58FF490B8B58ED4538EE /* Foundation.framework in Frameworks */,
+				3FC90BD64A4AF356D8C8DA3D /* HotMicPlayerCore in Frameworks */,
+				9ACD401D19D16ADF483F21D1 /* HotMicPlayer in Frameworks */,
+				7DE1B4078D1F9869D1536548 /* HotMicCore in Frameworks */,
+				15534BDF79C9E65D829A4C69 /* HotMicPlayerCoreTesting in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5210CE7B3EF04D5404078539 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				626D27F74E6B053BA90F5FBB /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		626D27F74E6B053BA90F5FBB /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				F8A6B73C9257F99FA90E1452 /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		6D1545B5E48585FE57953170 /* Streams Streams */ = {
+			isa = PBXGroup;
+			children = (
+				400720B52C967AAFCDCAE4A2 /* StreamsApp.swift */,
+			);
+			name = "Streams Streams";
+			path = Streams;
+			sourceTree = "<group>";
+		};
+		85B58BB4B358DEEE0BA1C035 /* StreamsAndEngagement StreamsAndEngagement */ = {
+			isa = PBXGroup;
+			children = (
+				72934B50949AE9460B7C68C5 /* StreamsAndEngagementApp.swift */,
+			);
+			name = "StreamsAndEngagement StreamsAndEngagement";
+			path = StreamsAndEngagement;
+			sourceTree = "<group>";
+		};
+		8D5E7B3B4A4807B129B842B3 = {
+			isa = PBXGroup;
+			children = (
+				8DA546430E0D4602C10979BD /* Products */,
+				5210CE7B3EF04D5404078539 /* Frameworks */,
+				6D1545B5E48585FE57953170 /* Streams Streams */,
+				9647E1FF46B24865A4F1C2E2 /* Streams Shared */,
+				85B58BB4B358DEEE0BA1C035 /* StreamsAndEngagement StreamsAndEngagement */,
+				BFC85A01DA5187A7E310B8E9 /* StreamsAndEngagement Shared */,
+				93D3D259797D6EB00AD9E3E2 /* Tests */,
+			);
+			sourceTree = "<group>";
+		};
+		8DA546430E0D4602C10979BD /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				206A2352109B7CF757E0C443 /* Streams.app */,
+				9742D006E0CADCA80053760F /* StreamsAndEngagement.app */,
+				A7599A6A6960662D512A3EA1 /* HotMicPlayerCoreTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		93D3D259797D6EB00AD9E3E2 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				C1CBC71E7111F4AA11416A7E /* CoreInteractionTests.swift */,
+				87219D43E3D6C95B8192BB90 /* CoreStreamsTests.swift */,
+			);
+			name = Tests;
+			path = ../Tests/HotMicPlayerCoreTests;
+			sourceTree = "<group>";
+		};
+		9647E1FF46B24865A4F1C2E2 /* Streams Shared */ = {
+			isa = PBXGroup;
+			children = (
+				C4CFBDDC6E62B25390D77B96 /* DemoClient.swift */,
+				AC4D530B25267BFB4CF1649C /* DemoSessions.swift */,
+				60EE9AF44FE346A478F97AB7 /* ExampleIntegration.swift */,
+			);
+			name = "Streams Shared";
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		BFC85A01DA5187A7E310B8E9 /* StreamsAndEngagement Shared */ = {
+			isa = PBXGroup;
+			children = (
+				D6AA0E8968AC37A93A8BD8E6 /* DemoClient.swift */,
+				037643EC6DFE024D2AE9A4D0 /* DemoSessions.swift */,
+				5A92EC75B1E39D5BA0122A28 /* ExampleIntegration.swift */,
+			);
+			name = "StreamsAndEngagement Shared";
+			path = Shared;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3A463F66A664DD907988DD3E /* Streams */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 9CA28A6AC3D031BC45EBE6FE /* Build configuration list for PBXNativeTarget "Streams" */;
+			buildPhases = (
+				BFFAC6AC9D50A09C2887A53F /* Sources */,
+				9F52D5BF6343CF499565E527 /* Frameworks */,
+				CD367B818A92910E317FA8D7 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Streams;
+			packageProductDependencies = (
+				895902C865B7619165DF2B03 /* HotMicPlayerCore */,
+				73F893DBB93C4149530FB5A8 /* HotMicPlayer */,
+				8D233687776A517CEA00220B /* HotMicCore */,
+				29747CEA9FFB2E7D11851FC7 /* HotMicPlayerCoreTesting */,
+			);
+			productName = Streams;
+			productReference = 206A2352109B7CF757E0C443 /* Streams.app */;
+			productType = "com.apple.product-type.application";
+		};
+		570FACE5CA0D23B9D6A30937 /* HotMicPlayerCoreTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0450A380F00D875CBCF94639 /* Build configuration list for PBXNativeTarget "HotMicPlayerCoreTests" */;
+			buildPhases = (
+				9F1822BA0F2470DAACC21E32 /* Sources */,
+				05F07152E7EF018255DD7ACC /* Frameworks */,
+				4C9222ADB513EADD14B038C5 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HotMicPlayerCoreTests;
+			packageProductDependencies = (
+				4925A40E11F2E3ACCA1463F2 /* HotMicPlayerCore */,
+				1F0C599F5B2AAC9056CADABA /* HotMicPlayer */,
+				C8A3D9813DDD710D8BF43999 /* HotMicCore */,
+				FE8ECCF529E08662BF84882B /* HotMicPlayerCoreTesting */,
+			);
+			productName = HotMicPlayerCoreTests;
+			productReference = A7599A6A6960662D512A3EA1 /* HotMicPlayerCoreTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		E892A2930925C41A06C52C4F /* StreamsAndEngagement */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 67E89B44B6F8FFEF8F77C89D /* Build configuration list for PBXNativeTarget "StreamsAndEngagement" */;
+			buildPhases = (
+				C7935587EAB0D334C2245673 /* Sources */,
+				2D4D9392156DFA33AAC2A9C7 /* Frameworks */,
+				B4026F0F9CDC24338B8BECA3 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StreamsAndEngagement;
+			packageProductDependencies = (
+				EF4E0FC32C71A85FB507549B /* HotMicPlayerCore */,
+				62145447A9938692CEA46D50 /* HotMicPlayer */,
+				AC2BBA730B0FF5F978EE0528 /* HotMicCore */,
+				017D1D96D5554CC74A2C8A32 /* HotMicPlayerUI */,
+				D84E6B6B97616BAC7611BCBC /* HotMicPlayerCoreTesting */,
+			);
+			productName = StreamsAndEngagement;
+			productReference = 9742D006E0CADCA80053760F /* StreamsAndEngagement.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2EE77D19826711A0D2FBD5FC /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = 070A238ACA341EE88A58926B /* Build configuration list for PBXProject "HotMicExamples" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 8D5E7B3B4A4807B129B842B3;
+			minimizedProjectReferenceProxies = 0;
+			packageReferences = (
+				F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */,
+				10CD30C431DC796CE93D355C /* XCRemoteSwiftPackageReference "hotmic-core-ios" */,
+				F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8DA546430E0D4602C10979BD /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3A463F66A664DD907988DD3E /* Streams */,
+				E892A2930925C41A06C52C4F /* StreamsAndEngagement */,
+				570FACE5CA0D23B9D6A30937 /* HotMicPlayerCoreTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		4C9222ADB513EADD14B038C5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B4026F0F9CDC24338B8BECA3 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CD367B818A92910E317FA8D7 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9F1822BA0F2470DAACC21E32 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD1AB4CCD370E2EA814E1DB5 /* CoreInteractionTests.swift in Sources */,
+				9E487F323669ED3A3D5C7D79 /* CoreStreamsTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BFFAC6AC9D50A09C2887A53F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B5307CC64D8285D2F928C54C /* StreamsApp.swift in Sources */,
+				3F7DB421C2DA5CD0A979B755 /* DemoClient.swift in Sources */,
+				A0B2A05FB2A686BD280437BE /* DemoSessions.swift in Sources */,
+				9FC890CF8DC3B0E0CD490420 /* ExampleIntegration.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C7935587EAB0D334C2245673 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CEF642E5B7317C997A74F0E8 /* StreamsAndEngagementApp.swift in Sources */,
+				B04535A9E527F1E64C7929D7 /* DemoClient.swift in Sources */,
+				59B882EA2E40A659F32308BE /* DemoSessions.swift in Sources */,
+				115A8CA906AAA5F3D251694C /* ExampleIntegration.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		AA478F48205613DC744F6C8E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotmic.playercore.Streams;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		B928BBD4D5EC4B9977412442 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotmic.playercore.HotMicPlayerCoreTests;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		D40943F04BD598D32494B657 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DA40EC685F2B4F824AEBEE4A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotmic.playercore.Streams;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		EB3AF922A71C5A3D7BA6E4F4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F3B64EE77699F3D15C02258F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotmic.playercore.StreamsAndEngagement;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		FB0F41D7A5E71A3D6819CAC4 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotmic.playercore.StreamsAndEngagement;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		FE74041DC4E06141AB2A70F0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.hotmic.playercore.HotMicPlayerCoreTests;
+				SDKROOT = iphoneos;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0450A380F00D875CBCF94639 /* Build configuration list for PBXNativeTarget "HotMicPlayerCoreTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FE74041DC4E06141AB2A70F0 /* Release */,
+				B928BBD4D5EC4B9977412442 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		070A238ACA341EE88A58926B /* Build configuration list for PBXProject "HotMicExamples" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D40943F04BD598D32494B657 /* Debug */,
+				EB3AF922A71C5A3D7BA6E4F4 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		67E89B44B6F8FFEF8F77C89D /* Build configuration list for PBXNativeTarget "StreamsAndEngagement" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F3B64EE77699F3D15C02258F /* Release */,
+				FB0F41D7A5E71A3D6819CAC4 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		9CA28A6AC3D031BC45EBE6FE /* Build configuration list for PBXNativeTarget "Streams" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DA40EC685F2B4F824AEBEE4A /* Release */,
+				AA478F48205613DC744F6C8E /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ..;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		10CD30C431DC796CE93D355C /* XCRemoteSwiftPackageReference "hotmic-core-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hotmic-wp/hotmic-core-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.2;
+			};
+		};
+		F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/hotmic-wp/hotmic-player-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = "1.0.0-rc.1";
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		017D1D96D5554CC74A2C8A32 /* HotMicPlayerUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			productName = HotMicPlayerUI;
+		};
+		1F0C599F5B2AAC9056CADABA /* HotMicPlayer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			productName = HotMicPlayer;
+		};
+		29747CEA9FFB2E7D11851FC7 /* HotMicPlayerCoreTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */;
+			productName = HotMicPlayerCoreTesting;
+		};
+		4925A40E11F2E3ACCA1463F2 /* HotMicPlayerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */;
+			productName = HotMicPlayerCore;
+		};
+		62145447A9938692CEA46D50 /* HotMicPlayer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			productName = HotMicPlayer;
+		};
+		73F893DBB93C4149530FB5A8 /* HotMicPlayer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			productName = HotMicPlayer;
+		};
+		895902C865B7619165DF2B03 /* HotMicPlayerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */;
+			productName = HotMicPlayerCore;
+		};
+		8D233687776A517CEA00220B /* HotMicCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 10CD30C431DC796CE93D355C /* XCRemoteSwiftPackageReference "hotmic-core-ios" */;
+			productName = HotMicCore;
+		};
+		AC2BBA730B0FF5F978EE0528 /* HotMicCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 10CD30C431DC796CE93D355C /* XCRemoteSwiftPackageReference "hotmic-core-ios" */;
+			productName = HotMicCore;
+		};
+		C8A3D9813DDD710D8BF43999 /* HotMicCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 10CD30C431DC796CE93D355C /* XCRemoteSwiftPackageReference "hotmic-core-ios" */;
+			productName = HotMicCore;
+		};
+		D84E6B6B97616BAC7611BCBC /* HotMicPlayerCoreTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */;
+			productName = HotMicPlayerCoreTesting;
+		};
+		EF4E0FC32C71A85FB507549B /* HotMicPlayerCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */;
+			productName = HotMicPlayerCore;
+		};
+		FE8ECCF529E08662BF84882B /* HotMicPlayerCoreTesting */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */;
+			productName = HotMicPlayerCoreTesting;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 2EE77D19826711A0D2FBD5FC /* Project object */;
+}

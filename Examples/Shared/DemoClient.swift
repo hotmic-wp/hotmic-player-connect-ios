@@ -1,6 +1,7 @@
 import Foundation
 import HotMicCore
-@_spi(Testing) import HotMicPlayerCore
+import HotMicPlayerCore
+import HotMicPlayerCoreTesting
 
 /// Public MDN MP4 and Apple VOD HLS fixtures. No HotMic API is contacted.
 actor DemoClient: CoreStreamClient {
@@ -11,7 +12,7 @@ actor DemoClient: CoreStreamClient {
             : "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
         return CoreStreamSummary(id: id, isVOD: id != "bad-live",
                                  vodURL: id == "bad-missing" ? nil : URL(string: url),
-                                 title: "Demo \(id)", duration: id == "sample-6" ? 1800 : 5.05)
+                                 title: "Demo \(id)", duration: id == "sample-1" ? nil : (id == "sample-6" ? 1800 : 5.05))
     }
 
     func fetchStream(id: String) async throws -> CoreStreamSummary {

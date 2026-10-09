@@ -2,22 +2,31 @@ import Foundation
 import HotMicCore
 import HotMicPlayer
 
-// Core's binary summary/page types have no public initializers. Keep this projection
-// at the boundary so fakes need neither production networking nor binary internals.
-@_spi(Testing) public protocol CoreStreamClient: Sendable {
-    func fetchStream(id: String) async throws -> CoreStreamSummary
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> CoreStreamPage
+/// Injectable stream transport. Implement with a Sendable value or actor; production uses HotMicClient.
+package protocol _CoreStreamClient: Sendable {
+    /// Fetches one stream summary by its Core ID.
+    func fetchStream(id: String) async throws -> _CoreStreamSummary
+    /// Fetches one stream summary by its Core ID.
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _CoreStreamPage
 }
 
-@_spi(Testing) public struct CoreStreamSummary: Sendable {
-    public let id: String
-    public let isVOD: Bool
-    public let vodURL: URL?
-    public var thumbnail: URL? = nil
-    public var title: String? = nil
-    public var duration: TimeInterval? = nil
+/// A transport-independent stream summary. Sendable; mutate only exclusively owned values.
+package struct _CoreStreamSummary: Sendable {
+    /// The Core stream ID.
+    package let id: String
+    /// Whether the stream is a recorded VOD.
+    package let isVOD: Bool
+    /// Playable VOD URL; nil means unavailable.
+    package let vodURL: URL?
+    /// Optional poster image URL.
+    package var thumbnail: URL? = nil
+    /// Optional stream title.
+    package var title: String? = nil
+    /// Optional recording duration in seconds.
+    package var duration: TimeInterval? = nil
 
-    public init(id: String, isVOD: Bool, vodURL: URL?, thumbnail: URL? = nil,
+    /// Creates a stream summary for an injected client.
+    package init(id: String, isVOD: Bool, vodURL: URL?, thumbnail: URL? = nil,
          title: String? = nil, duration: TimeInterval? = nil) {
         self.id = id; self.isVOD = isVOD; self.vodURL = vodURL
         self.thumbnail = thumbnail; self.title = title; self.duration = duration
@@ -42,26 +51,33 @@ import HotMicPlayer
     }
 }
 
-@_spi(Testing) public struct CoreStreamPage: Sendable {
-    public let streams: [CoreStreamSummary]
-    public let currentPage: Int
-    public let hasNext: Bool
+/// One numbered catalogue page. Sendable across tasks.
+package struct _CoreStreamPage: Sendable {
+    /// Stream summaries in server order.
+    package let streams: [_CoreStreamSummary]
+    /// The page number actually returned by the backend.
+    package let currentPage: Int
+    /// Whether the catalogue contains another page.
+    package let hasNext: Bool
 
-    public init(streams: [CoreStreamSummary], currentPage: Int, hasNext: Bool) {
+    /// Creates a catalogue page for an injected client.
+    package init(streams: [_CoreStreamSummary], currentPage: Int, hasNext: Bool) {
         self.streams = streams; self.currentPage = currentPage; self.hasNext = hasNext
     }
 }
 
-struct LiveCoreStreamClient: CoreStreamClient {
+struct LiveCoreStreamClient: _CoreStreamClient {
     let client: HotMicClient
 
-    func fetchStream(id: String) async throws -> CoreStreamSummary {
-        CoreStreamSummary(try await client.fetchStream(id: id))
+    /// Fetches one stream summary by its Core ID.
+    func fetchStream(id: String) async throws -> _CoreStreamSummary {
+        _CoreStreamSummary(try await client.fetchStream(id: id))
     }
 
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> CoreStreamPage {
+    /// Fetches one stream summary by its Core ID.
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _CoreStreamPage {
         let page = try await client.fetchStreams(matching: query)
-        return CoreStreamPage(streams: page.streams.map(CoreStreamSummary.init),
+        return _CoreStreamPage(streams: page.streams.map(_CoreStreamSummary.init),
                               currentPage: page.pagination.currentPage, hasNext: page.pagination.hasNext)
     }
 }

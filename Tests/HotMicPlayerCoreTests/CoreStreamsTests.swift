@@ -1,7 +1,8 @@
 import XCTest
 import HotMicCore
 import HotMicPlayer
-@_spi(Testing) @testable import HotMicPlayerCore
+@testable import HotMicPlayerCore
+@testable import HotMicPlayerCoreTesting
 
 private actor FakeClient: CoreStreamClient {
     var streamCalls = 0
@@ -38,13 +39,13 @@ final class CoreStreamsTests: XCTestCase {
 
     func testSummaryMappingAndTerminalErrors() throws {
         let summary = vod("one")
-        let resolved = try summary.resolvedItem()
+        let resolved = try summary.runtimeValue.resolvedItem()
         XCTAssertEqual(resolved.url, url)
         XCTAssertEqual(resolved.format, .auto)
         XCTAssertEqual(resolved.poster, summary.thumbnail)
         XCTAssertEqual(resolved.title, "Replay")
         XCTAssertEqual(resolved.duration, 42)
-        let item = try summary.playlistItem()
+        let item = try summary.runtimeValue.playlistItem()
         XCTAssertEqual(item.id, HMMediaItem.hotmicStream("one").id)
         XCTAssertEqual(item.source, .url(url, format: .auto))
         XCTAssertEqual(item.posterURL, resolved.poster)
@@ -54,7 +55,7 @@ final class CoreStreamsTests: XCTestCase {
             (CoreStreamSummary(id: "live", isVOD: false, vodURL: url), HotMicPlayerCoreError.notVOD(streamID: "live")),
             (CoreStreamSummary(id: "missing", isVOD: true, vodURL: nil), .missingVODURL(streamID: "missing"))
         ] {
-            XCTAssertThrowsError(try summary.resolvedItem()) { XCTAssertEqual($0 as? HotMicPlayerCoreError, expected) }
+            XCTAssertThrowsError(try summary.runtimeValue.resolvedItem()) { XCTAssertEqual($0 as? HotMicPlayerCoreError, expected) }
         }
     }
 
@@ -128,64 +129,4 @@ final class CoreStreamsTests: XCTestCase {
         XCTAssertEqual(pages, [4])
     }
 
-    @MainActor
-    func testSkipPolicyRecognizesOnlyMatchingTerminalHotMicErrors() async throws {
-        let client = FakeClient(summaries: [
-            CoreStreamSummary(id: "bad", isVOD: false, vodURL: nil),
-            CoreStreamSummary(id: "missing", isVOD: true, vodURL: nil)
-        ])
-        let resolver = CoreItemResolver(client: client)
-        for id in ["bad", "missing"] {
-            do { _ = try await resolver.resolve(.init(namespace: "hotmic", id: id)); XCTFail("Expected terminal error") }
-            catch is HotMicPlayerCoreError { }
-            let item = HMMediaItem.hotmicStream(id)
-            let matched = await HMPlayer.terminalHotMicItem(in: .error(item: item, kind: .resolution("Localized text can change")), using: resolver)
-            XCTAssertEqual(matched, item, "Typed error kinds must match independently of message text")
-        }
-        let item = HMMediaItem.hotmicStream("bad")
-        let terminalText = HotMicPlayerCoreError.notVOD(streamID: "bad").localizedDescription
-        for event in [
-            HMPlayerEvent.error(item: item, kind: .playback(terminalText)),
-            .error(item: .hotmicStream("different"), kind: .resolution(terminalText)),
-            .error(item: .reference("other", id: "bad"), kind: .resolution(terminalText)),
-            .error(item: HMMediaItem(id: item.id, url: url), kind: .resolution(terminalText)),
-            .error(item: nil, kind: .resolution(terminalText))
-        ] {
-            let matched = await HMPlayer.terminalHotMicItem(in: event, using: resolver)
-            XCTAssertNil(matched)
-        }
-        // A later transport failure must clear an earlier terminal outcome,
-        // even if its event text happens to equal a terminal description.
-        await client.setFails(true)
-        do { _ = try await resolver.resolve(.init(namespace: "hotmic", id: "bad")); XCTFail("Expected transport error") }
-        catch is URLError { }
-        let matched = await HMPlayer.terminalHotMicItem(in: .error(item: item, kind: .resolution(terminalText)), using: resolver)
-        XCTAssertNil(matched)
-    }
-
-    @MainActor
-    func testSkipHelperRemovesOnlyFailedEntryAndHandlesEmptyPlaylist() async throws {
-        let client = FakeClient(summaries: [CoreStreamSummary(id: "bad", isVOD: false, vodURL: nil)])
-        let resolver = CoreItemResolver(client: client)
-        let player = HMPlayer(resolver: resolver)
-        let task = player.skipFailedHotMicItems(using: resolver)
-        defer { task.cancel(); player.teardown() }
-        let subscription = player.events
-        let errorObserved = Task { @MainActor in
-            for await event in subscription {
-                if await HMPlayer.terminalHotMicItem(in: event, using: resolver) != nil { return true }
-            }
-            return false
-        }
-        defer { errorObserved.cancel() }
-        player.replaceAll([.hotmicStream("bad")])
-        // Bounded wait for native transport startup + resolver completion; no media URL is fetched.
-        for _ in 0..<200 {
-            if player.items.isEmpty { break }
-            try await Task.sleep(for: .milliseconds(25))
-        }
-        XCTAssertTrue(player.items.isEmpty)
-        XCTAssertNil(player.currentItem)
-        if player.items.isEmpty { let observed = await errorObserved.value; XCTAssertTrue(observed) }
-    }
 }

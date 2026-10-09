@@ -1,0 +1,50 @@
+name: Partner release checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-checks-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: macos-26
+    timeout-minutes: 9
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: Require Xcode 26.6
+        run: |
+          if [[ ! -x "$DEVELOPER_DIR/usr/bin/xcodebuild" ]]; then
+            echo "::error::Xcode 26.6 is required but is missing at $DEVELOPER_DIR."
+            exit 1
+          fi
+          version=$(xcodebuild -version)
+          if [[ "${version%%$'\n'*}" != 'Xcode 26.6' ]]; then
+            echo "::error::Expected Xcode 26.6 at $DEVELOPER_DIR; found $version."
+            exit 1
+          fi
+          printf '%s\n' "$version"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Configure private dependency access
+        env:
+          PLAYER_SDK_READ_TOKEN: ${{ secrets.PLAYER_SDK_READ_TOKEN }}
+        run: bash .github/scripts/configure-dependency-access.sh
+      - name: Check partner content, build package and examples, DocC, then run the suite once
+        env:
+          PARTNER_DOCS_DENYLIST: ${{ secrets.PARTNER_DOCS_DENYLIST }}
+        run: bash .github/scripts/validate-release.sh
+      - name: Remove temporary dependency credentials
+        if: always()
+        run: |
+          if [[ -n "${GIT_CONFIG_GLOBAL:-}" ]]; then
+            rm -f -- "$GIT_CONFIG_GLOBAL"
+          fi
