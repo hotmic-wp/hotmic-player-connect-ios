@@ -25,6 +25,7 @@ public extension HMPlayer {
         }
     }
 
+    /// Testing-only classification for the deprecated compatibility helper. Main actor.
     @_spi(Testing)
     static func terminalHotMicItem(in event: HMPlayerEvent, using resolver: CoreItemResolver) async -> HMMediaItem? {
         guard case let .error(item?, .resolution) = event,

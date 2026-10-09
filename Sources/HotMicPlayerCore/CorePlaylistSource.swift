@@ -16,7 +16,8 @@ public struct CorePlaylistSource: HMPlaylistSource {
         self.init(client: LiveCoreStreamClient(client: client), query: query)
     }
 
-    @_spi(Testing) public init(client: any CoreStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
+    /// Creates an adapter with an injectable client, for offline previews or custom transport.
+    public init(client: any CoreStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
         includesLive: false, includesScheduled: false, includesVOD: true
     )) {
         self.client = client

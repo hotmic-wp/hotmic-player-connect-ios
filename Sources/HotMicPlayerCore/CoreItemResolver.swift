@@ -20,11 +20,13 @@ public actor CoreItemResolver: HMItemResolver {
         self.init(client: LiveCoreStreamClient(client: client), cacheCapacity: cacheCapacity)
     }
 
-    @_spi(Testing) public init(client: any CoreStreamClient, cacheCapacity: Int = 32) {
+    /// Creates an adapter with an injectable client, for offline previews or custom transport.
+    public init(client: any CoreStreamClient, cacheCapacity: Int = 32) {
         self.client = client
         self.cacheCapacity = max(0, cacheCapacity)
     }
 
+    /// Resolves a HotMic VOD reference; cancellation and Core transport errors propagate.
     public func resolve(_ ref: HMMediaItem.Reference) async throws -> HMResolvedItem {
         try Task.checkCancellation()
         guard ref.namespace == "hotmic" else {

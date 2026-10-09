@@ -6,8 +6,20 @@ import HotMicPlayer
 /// HotMic VOD engagement. Use one source per player and authenticated user.
 /// Only current and next own sessions; timeline access never opens a session.
 @MainActor @Observable public final class CoreInteractionSource: HMInteractionSource {
+    /// Engagement connection status, independent of media playback. Main-actor reads; Sendable values.
     public enum ConnectionState: Equatable, Sendable {
-        case idle, starting, connected, reconnecting(attempt: Int), disconnected, failed
+        /// No session is active.
+        case idle
+        /// A session is loading its snapshot.
+        case starting
+        /// Core is connected.
+        case connected
+        /// Core is retrying polling within the session.
+        case reconnecting(attempt: Int)
+        /// The session has disconnected or ended.
+        case disconnected
+        /// Startup failed; transient failures retry while current.
+        case failed
     }
     private var states: [String: ConnectionState] = [:]
     @ObservationIgnored private let factory: any CoreSessionFactory
@@ -25,11 +37,17 @@ import HotMicPlayer
     /// Current-item dwell before opening next. Zero opts into immediate preparation.
     public let nextSessionDelay: TimeInterval
 
+    /// Creates engagement sharing the host's authenticated client. Access on the main actor.
     public convenience init(client: HotMicClient, nextSessionDelay: TimeInterval = 1) {
         self.init(factory: LiveCoreSessionFactory(client: client), nextSessionDelay: nextSessionDelay)
     }
+    /// Creates engagement using an injectable session factory. Access on the main actor.
+    public convenience init(factory: any CoreSessionFactory, nextSessionDelay: TimeInterval = 1) {
+        self.init(factory: factory, nextSessionDelay: nextSessionDelay, retryBaseDelay: 1)
+    }
+    /// Testing-only initializer with an accelerated startup retry interval.
     @_spi(Testing) public init(factory: any CoreSessionFactory, nextSessionDelay: TimeInterval = 1,
-                               retryBaseDelay: TimeInterval = 1) {
+                               retryBaseDelay: TimeInterval) {
         self.factory = factory
         self.nextSessionDelay = nextSessionDelay.isFinite ? max(0, nextSessionDelay) : 1
         self.retryBaseDelay = retryBaseDelay.isFinite ? max(0.01, retryBaseDelay) : 1
@@ -48,11 +66,15 @@ import HotMicPlayer
 
     /// Connection failures affect engagement only. Transient startup failures retry while current.
     public func connectionState(for item: HMMediaItem) -> ConnectionState { states[item.id] ?? .idle }
+    /// Returns chat, message reaction and voting support for HotMic items. Main actor.
     public func capabilities(for item: HMMediaItem) -> HMEngagementCapabilities {
         streamID(for: item) == nil ? .readOnly : [.sendChat, .reactToMessage, .vote]
     }
+    /// Returns an inert timeline; never opens a session. Main actor.
     public func timeline(for item: HMMediaItem) -> any HMStreamTimeline { store(for: item) }
+    /// Returns polls currently mapped onto the VOD timeline. Main actor.
     public func polls(for item: HMMediaItem) -> [HMPoll] { Array(store(for: item).polls.values) }
+    /// Attaches engagement weakly and applies prepared updates. Main actor.
     public func engagementDidLoad(_ engagement: HMEngagement) {
         let timeline = store(for: engagement.item)
         timeline.engagement = engagement
@@ -62,7 +84,9 @@ import HotMicPlayer
         for event in timeline.pendingDeletions { applyDeletion(event, to: timeline) }
         timeline.pendingDeletions.removeAll()
     }
+    /// Prepares next after the current-item dwell, within the two-session budget. Main actor.
     public func willBecomeNext(_ item: HMMediaItem) { next = item; scheduleReconciliation() }
+    /// Promotes a prepared session or opens current. Main actor.
     public func didBecomeCurrent(_ item: HMMediaItem) {
         if current?.id != item.id || current.flatMap({ streamID(for: $0) }) != streamID(for: item) {
             currentSince = .now
@@ -71,6 +95,7 @@ import HotMicPlayer
         if next?.id == item.id { next = nil }
         scheduleReconciliation()
     }
+    /// Stops an item after it leaves current and next. Main actor.
     public func didLeave(_ item: HMMediaItem) {
         if current?.id == item.id { current = nil; currentSince = nil }
         if next?.id == item.id { next = nil }
@@ -78,28 +103,32 @@ import HotMicPlayer
         scheduleReconciliation()
     }
 
+    /// Sends chat through the active session at the viewer’s media position. Main actor.
     public func sendChat(_ text: String, for item: HMMediaItem) async throws {
         let timeline = store(for: item)
         let message = HMChatMessage(id: UUID().uuidString, author: "You", text: text,
                                     offset: timeline.engagement?.currentMediaTime ?? 0)
         if let event = try await sendChat(message, for: item) { timeline.engagement?.receive(event) }
     }
+    /// Sends chat through the active session at the viewer’s media position. Main actor.
     public func sendChat(_ message: HMChatMessage, for item: HMMediaItem) async throws -> HMTimelineEvent? {
         let slot = try activeSlot(for: item)
         let confirmed = try await slot.session.sendChat(message.text)
         // Keep a confirmed send at the viewer's playback position, not today's wall time on an old VOD.
-        slot.timeline.ownOffsets[confirmed.id] = slot.timeline.clamp(message.offset)
-        slot.timeline.messages[confirmed.id] = confirmed
+        slot.timeline.ownOffsets[confirmed.id] = message.offset.isFinite ? max(0, message.offset) : 0
+        slot.timeline.remember(confirmed)
         guard let event = slot.timeline.event(confirmed) else { return nil }
         slot.timeline.append(event)
         return event
     }
+    /// Adds one of 👍 / 🔥 / 😆 / 😡 / 😢 to a message. Main actor.
     public func react(_ emoji: String, toMessage messageID: String, for item: HMMediaItem) async throws {
         guard let type = Self.types[emoji] else { throw HMInteractionError.unsupportedAction }
         let slot = try activeSlot(for: item)
         let reaction = try await slot.session.addReaction(type, to: messageID)
         applyReaction(reaction, added: true, to: slot)
     }
+    /// Submits a poll option; Core poll updates reconcile the result. Main actor.
     public func vote(pollID: String, optionID: String, for item: HMMediaItem) async throws {
         let slot = try activeSlot(for: item)
         try await slot.session.vote(pollID: pollID, optionID: optionID)
@@ -119,7 +148,10 @@ import HotMicPlayer
     }
     private func store(for item: HMMediaItem) -> CoreTimeline {
         let streamID = streamID(for: item)
-        if let existing = timelines[item.id]?.value, existing.streamID == streamID { return existing }
+        if let existing = timelines[item.id]?.value, existing.streamID == streamID {
+            existing.supplyDuration(item.durationHint)
+            return existing
+        }
         timelines = timelines.filter { $0.value.value != nil }
         let timeline = CoreTimeline(streamID: streamID, duration: item.durationHint ?? 0)
         timelines[item.id] = WeakTimeline(timeline)
@@ -261,7 +293,7 @@ import HotMicPlayer
         case .reactionDeleted(let reaction): applyReaction(reaction, added: false, to: slot)
         case .poll(let poll): upsert(poll, in: slot)
         case .pollDeleted(let id):
-            slot.timeline.polls[id] = nil
+            slot.timeline.removePoll(id)
             deletion(event, timeline: slot.timeline)
         case .stream(let date, let duration):
             slot.timeline.retime(liveDate: date, duration: duration)
@@ -270,24 +302,19 @@ import HotMicPlayer
     }
     private func receive(_ messages: [CoreChat], in slot: Slot) {
         let mapped = messages.compactMap { chat -> (CoreChat, HMTimelineEvent)? in
+            slot.timeline.remember(chat)
             guard let event = slot.timeline.event(chat) else { return nil }
-            slot.timeline.messages[chat.id] = chat
             return (chat, event)
         }
         // One sort/waveform rebuild, with the player's moderation guard before each append.
-        let events = mapped.map { $0.1 }
+        let events = mapped.filter { slot.timeline.messages[$0.0.id] != nil }.map { $0.1 }
         if let engagement = slot.timeline.engagement {
             slot.timeline.append(contentsOf: events) { engagement.receive($0) }
             for (chat, _) in mapped { engagement.updateReactions(chat.counts, forMessage: chat.id) }
         } else { slot.timeline.append(contentsOf: events) }
     }
     private func upsert(_ poll: CorePoll, in slot: Slot) {
-        guard let offset = slot.timeline.offset(poll.createdAt) else { return }
-        let mapped = HMPoll(id: poll.id, question: poll.question,
-                            options: poll.options.map { .init(id: $0.id, text: $0.text, votes: max(0, $0.votes)) },
-                            viewerVote: poll.viewerVote, opensAt: offset, isClosed: poll.closed)
-        slot.timeline.polls[poll.id] = mapped
-        slot.timeline.engagement?.upsertPoll(mapped)
+        slot.timeline.remember(poll)
     }
     private func applyReaction(_ reaction: CoreMessageReaction, added: Bool, to slot: Slot) {
         guard let emoji = Self.emoji(reaction.type) else { return }
