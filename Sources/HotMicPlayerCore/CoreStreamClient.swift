@@ -4,20 +4,20 @@ import HotMicPlayer
 
 // Core's binary summary/page types have no public initializers. Keep this projection
 // at the boundary so fakes need neither production networking nor binary internals.
-protocol CoreStreamClient: Sendable {
+@_spi(Testing) public protocol CoreStreamClient: Sendable {
     func fetchStream(id: String) async throws -> CoreStreamSummary
     func fetchStreams(matching query: HotMicStreamQuery) async throws -> CoreStreamPage
 }
 
-struct CoreStreamSummary: Sendable {
-    let id: String
-    let isVOD: Bool
-    let vodURL: URL?
-    var thumbnail: URL? = nil
-    var title: String? = nil
-    var duration: TimeInterval? = nil
+@_spi(Testing) public struct CoreStreamSummary: Sendable {
+    public let id: String
+    public let isVOD: Bool
+    public let vodURL: URL?
+    public var thumbnail: URL? = nil
+    public var title: String? = nil
+    public var duration: TimeInterval? = nil
 
-    init(id: String, isVOD: Bool, vodURL: URL?, thumbnail: URL? = nil,
+    public init(id: String, isVOD: Bool, vodURL: URL?, thumbnail: URL? = nil,
          title: String? = nil, duration: TimeInterval? = nil) {
         self.id = id; self.isVOD = isVOD; self.vodURL = vodURL
         self.thumbnail = thumbnail; self.title = title; self.duration = duration
@@ -41,10 +41,14 @@ struct CoreStreamSummary: Sendable {
     }
 }
 
-struct CoreStreamPage: Sendable {
-    let streams: [CoreStreamSummary]
-    let currentPage: Int
-    let hasNext: Bool
+@_spi(Testing) public struct CoreStreamPage: Sendable {
+    public let streams: [CoreStreamSummary]
+    public let currentPage: Int
+    public let hasNext: Bool
+
+    public init(streams: [CoreStreamSummary], currentPage: Int, hasNext: Bool) {
+        self.streams = streams; self.currentPage = currentPage; self.hasNext = hasNext
+    }
 }
 
 struct LiveCoreStreamClient: CoreStreamClient {

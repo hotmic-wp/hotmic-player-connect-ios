@@ -5,8 +5,6 @@ Dir.chdir(__dir__) do
   project = Xcodeproj::Project.new('HotMicPlayerCoreDemo.xcodeproj')
   app = project.new_target(:application, 'HotMicPlayerCoreDemo', :ios, '17.0')
   tests = project.new_target(:unit_test_bundle, 'HotMicPlayerCoreTests', :ios, '17.0')
-  sources = project.main_group.new_group('Adapter', '../Sources/HotMicPlayerCore')
-  Dir['../Sources/HotMicPlayerCore/*.swift'].sort.each { |f| app.source_build_phase.add_file_reference(sources.new_file(File.basename(f))) }
   demo = project.main_group.new_group('Demo', 'HotMicPlayerCoreDemo')
   Dir['HotMicPlayerCoreDemo/*.swift'].sort.each { |f| app.source_build_phase.add_file_reference(demo.new_file(File.basename(f))) }
   test_group = project.main_group.new_group('Tests', '../Tests/HotMicPlayerCoreTests')

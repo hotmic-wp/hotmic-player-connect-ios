@@ -2,6 +2,7 @@ import SwiftUI
 import Observation
 import HotMicCore
 import HotMicPlayer
+@_spi(Testing) import HotMicPlayerCore
 
 @main
 struct HotMicPlayerCoreDemoApp: App {
@@ -12,7 +13,8 @@ struct HotMicPlayerCoreDemoApp: App {
 final class DemoModel {
     let player: HMPlayer
     let isFake: Bool
-    private let client: any CoreStreamClient
+    private let resolver: CoreItemResolver
+    private let source: CorePlaylistSource
     private var skipTask: Task<Void, Never>?
     private var eventsTask: Task<Void, Never>?
     var streamID = "sample-6"
@@ -21,27 +23,32 @@ final class DemoModel {
 
     init() {
         if let credentials = DemoCredentials.load() {
-            client = LiveCoreStreamClient(client: HotMicClient(apiKey: credentials.HOTMIC_API_KEY,
-                                                              accessToken: credentials.HOTMIC_ACCESS_TOKEN))
+            let client = HotMicClient(apiKey: credentials.HOTMIC_API_KEY,
+                                      accessToken: credentials.HOTMIC_ACCESS_TOKEN)
+            resolver = CoreItemResolver(client: client)
+            source = CorePlaylistSource(client: client)
             isFake = false
         } else {
-            client = DemoClient()
+            let client = DemoClient()
+            resolver = CoreItemResolver(client: client)
+            source = CorePlaylistSource(client: client)
             isFake = true
         }
-        player = HMPlayer(resolver: CoreItemResolver(client: client))
-        skipTask = player.skipFailedHotMicItems()
+        player = HMPlayer(resolver: resolver)
+        skipTask = player.skipFailedHotMicItems(using: resolver)
         let events = player.events
         eventsTask = Task { @MainActor [weak self] in
             for await event in events {
                 guard let self, !Task.isCancelled else { return }
                 switch event {
                 case .error(let item, _):
-                    if HMPlayer.terminalHotMicItem(in: event) != nil {
+                    let terminal = await HMPlayer.terminalHotMicItem(in: event, using: self.resolver) != nil
+                    if terminal {
                         self.message = "Item error: \(item?.id ?? "") skipped (not playable VOD)."
                     } else {
                         self.message = "Playback or network error. Check connectivity and credentials."
                     }
-                    self.record("itemError", ["id": item?.id ?? "", "terminal": String(HMPlayer.terminalHotMicItem(in: event) != nil)])
+                    self.record("itemError", ["id": item?.id ?? "", "terminal": String(terminal)])
                 case .playlistChanged(let items):
                     self.record("playlist", ["ids": items.map(\.id).joined(separator: ",")])
                 case .currentItemChanged(let item):
@@ -58,7 +65,7 @@ final class DemoModel {
 
     func feed() async {
         mode = "Feed"; message = ""
-        player.playlistSource = CorePlaylistSource(client: client)
+        player.playlistSource = source
         player.replaceAll([])
         await player.start()
     }

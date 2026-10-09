@@ -8,7 +8,7 @@ public enum HotMicPlayerCoreError: Error, Equatable, Sendable, LocalizedError {
     case invalidCursor(String)
     case invalidPagination
 
-    /// Terminal playback messages are also recognized by the interim skip helper.
+    /// Human-readable description; the interim skip helper matches typed cases.
     public var errorDescription: String? {
         switch self {
         case .unsupportedNamespace(let namespace):

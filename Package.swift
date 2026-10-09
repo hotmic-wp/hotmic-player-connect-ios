@@ -14,7 +14,11 @@ let package = Package(
             .product(name: "HotMicPlayer", package: "hotmic-player-sdk"),
             .product(name: "HotMicCore", package: "hotmic-core-ios")
         ]),
-        .testTarget(name: "HotMicPlayerCoreTests", dependencies: ["HotMicPlayerCore"])
+        .testTarget(name: "HotMicPlayerCoreTests", dependencies: [
+            "HotMicPlayerCore",
+            .product(name: "HotMicPlayer", package: "hotmic-player-sdk"),
+            .product(name: "HotMicCore", package: "hotmic-core-ios")
+        ])
     ],
     swiftLanguageModes: [.v5]
 )

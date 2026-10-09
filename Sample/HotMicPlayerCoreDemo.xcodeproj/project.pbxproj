@@ -7,8 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		05267BFD25E18C9C4E032E6F /* HotMicPlayerCoreError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 92FEC649F2C80910B198E20E /* HotMicPlayerCoreError.swift */; };
-		340A1F5BE81ECE74A57C105D /* SkipFailedHotMicItems.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEA18E96D538C98BA616544E /* SkipFailedHotMicItems.swift */; };
+		157022CAC691C2800AC25E0A /* PartnerIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D005A8C2B8042A39B48F5B /* PartnerIntegration.swift */; };
 		3F34E55744AE14AAD3F5AA01 /* CoreStreamsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2843ECBD008778E50CB041 /* CoreStreamsTests.swift */; };
 		4D0BDDC93FA95AC12C52E69C /* HotMicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 1DE60ADCC02FE98AF7A5305C /* HotMicPlayer */; };
 		54F1A27C414E503CD06BC15B /* HotMicPlayerCoreDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D298B5F85EF38AF66C432B4 /* HotMicPlayerCoreDemoApp.swift */; };
@@ -18,9 +17,6 @@
 		A09489D23E35891C3C89E00B /* HotMicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = FCED964C927FE5D4E0C8A967 /* HotMicPlayer */; };
 		A669B59C2ACD660903594C7F /* HotMicCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DFE7335B787834220AA7519 /* HotMicCore */; };
 		A7620D0D13CEAF7C6EA93FBD /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7B208E5D4F5ED247D736C3F3 /* Foundation.framework */; };
-		C20003D8D16CC81CE5F5692B /* CoreStreamClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99F227FF66DE9FDDB7826421 /* CoreStreamClient.swift */; };
-		C9E9002CA2889A2308394B30 /* CoreItemResolver.swift in Sources */ = {isa = PBXBuildFile; fileRef = C297EA7E73ADE5819B182336 /* CoreItemResolver.swift */; };
-		DD892CAA2934418560C95384 /* CorePlaylistSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA0972EC2005AA8D1A94ADD /* CorePlaylistSource.swift */; };
 		EECB225E731CD08157A3182B /* HotMicPlayerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8AAD274690B818000BC47464 /* HotMicPlayerCore */; };
 		F8AFCCF4F3010C6D41E73259 /* HotMicPlayerCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEF9CFC419C388FC8F45484A /* HotMicPlayerCore */; };
 /* End PBXBuildFile section */
@@ -31,11 +27,7 @@
 		5D298B5F85EF38AF66C432B4 /* HotMicPlayerCoreDemoApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HotMicPlayerCoreDemoApp.swift; sourceTree = "<group>"; };
 		689D19D0613551426E5E0D05 /* HotMicPlayerCoreDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HotMicPlayerCoreDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7B208E5D4F5ED247D736C3F3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
-		7FA0972EC2005AA8D1A94ADD /* CorePlaylistSource.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CorePlaylistSource.swift; sourceTree = "<group>"; };
-		92FEC649F2C80910B198E20E /* HotMicPlayerCoreError.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HotMicPlayerCoreError.swift; sourceTree = "<group>"; };
-		99F227FF66DE9FDDB7826421 /* CoreStreamClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreStreamClient.swift; sourceTree = "<group>"; };
-		AEA18E96D538C98BA616544E /* SkipFailedHotMicItems.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SkipFailedHotMicItems.swift; sourceTree = "<group>"; };
-		C297EA7E73ADE5819B182336 /* CoreItemResolver.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreItemResolver.swift; sourceTree = "<group>"; };
+		C1D005A8C2B8042A39B48F5B /* PartnerIntegration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PartnerIntegration.swift; sourceTree = "<group>"; };
 		DD2843ECBD008778E50CB041 /* CoreStreamsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreStreamsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -70,7 +62,6 @@
 			children = (
 				80A8BD88FF5A09E73C528B66 /* Products */,
 				B87860B9148089A693134F16 /* Frameworks */,
-				B76F64CB64C5CB2DBA7367A9 /* Adapter */,
 				643123422B9E5E60F64B9D41 /* Demo */,
 				967D8C44C6347C429214DACC /* Tests */,
 			);
@@ -89,6 +80,7 @@
 			children = (
 				07DABC36BD1534EFB49599F9 /* DemoClient.swift */,
 				5D298B5F85EF38AF66C432B4 /* HotMicPlayerCoreDemoApp.swift */,
+				C1D005A8C2B8042A39B48F5B /* PartnerIntegration.swift */,
 			);
 			name = Demo;
 			path = HotMicPlayerCoreDemo;
@@ -110,19 +102,6 @@
 			);
 			name = Tests;
 			path = ../Tests/HotMicPlayerCoreTests;
-			sourceTree = "<group>";
-		};
-		B76F64CB64C5CB2DBA7367A9 /* Adapter */ = {
-			isa = PBXGroup;
-			children = (
-				C297EA7E73ADE5819B182336 /* CoreItemResolver.swift */,
-				7FA0972EC2005AA8D1A94ADD /* CorePlaylistSource.swift */,
-				99F227FF66DE9FDDB7826421 /* CoreStreamClient.swift */,
-				92FEC649F2C80910B198E20E /* HotMicPlayerCoreError.swift */,
-				AEA18E96D538C98BA616544E /* SkipFailedHotMicItems.swift */,
-			);
-			name = Adapter;
-			path = ../Sources/HotMicPlayerCore;
 			sourceTree = "<group>";
 		};
 		B87860B9148089A693134F16 /* Frameworks */ = {
@@ -237,13 +216,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				C9E9002CA2889A2308394B30 /* CoreItemResolver.swift in Sources */,
-				DD892CAA2934418560C95384 /* CorePlaylistSource.swift in Sources */,
-				C20003D8D16CC81CE5F5692B /* CoreStreamClient.swift in Sources */,
-				05267BFD25E18C9C4E032E6F /* HotMicPlayerCoreError.swift in Sources */,
-				340A1F5BE81ECE74A57C105D /* SkipFailedHotMicItems.swift in Sources */,
 				84DCEAE8AD1F2C93F01B26FE /* DemoClient.swift in Sources */,
 				54F1A27C414E503CD06BC15B /* HotMicPlayerCoreDemoApp.swift in Sources */,
+				157022CAC691C2800AC25E0A /* PartnerIntegration.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
