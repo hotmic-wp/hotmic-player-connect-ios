@@ -2,6 +2,7 @@ import SwiftUI
 import Observation
 import HotMicCore
 import HotMicPlayer
+import HotMicPlayerUI
 @_spi(Testing) import HotMicPlayerCore
 
 @main
@@ -15,27 +16,32 @@ final class DemoModel {
     let isFake: Bool
     private let resolver: CoreItemResolver
     private let source: CorePlaylistSource
-    private var skipTask: Task<Void, Never>?
+    let interactions: CoreInteractionSource
+    private let fakeSessions: DemoSessions?
     private var eventsTask: Task<Void, Never>?
     var streamID = "sample-6"
     var message = ""
     var mode = "Feed"
 
     init() {
-        if let credentials = DemoCredentials.load() {
+        if !ProcessInfo.processInfo.arguments.contains("--fake"), let credentials = DemoCredentials.load() {
             let client = HotMicClient(apiKey: credentials.HOTMIC_API_KEY,
                                       accessToken: credentials.HOTMIC_ACCESS_TOKEN)
             resolver = CoreItemResolver(client: client)
             source = CorePlaylistSource(client: client)
+            interactions = CoreInteractionSource(client: client)
+            fakeSessions = nil
             isFake = false
         } else {
             let client = DemoClient()
             resolver = CoreItemResolver(client: client)
             source = CorePlaylistSource(client: client)
+            let sessions = DemoSessions()
+            fakeSessions = sessions
+            interactions = CoreInteractionSource(factory: sessions)
             isFake = true
         }
-        player = HMPlayer(resolver: resolver)
-        skipTask = player.skipFailedHotMicItems(using: resolver)
+        player = HMPlayer(resolver: resolver, interactions: interactions)
         let events = player.events
         eventsTask = Task { @MainActor [weak self] in
             for await event in events {
@@ -82,7 +88,7 @@ final class DemoModel {
     func visibility(_ visible: Bool) { player.isFeedVisible = visible }
 
     func stop() {
-        skipTask?.cancel(); eventsTask?.cancel(); player.teardown()
+        eventsTask?.cancel(); player.teardown()
     }
 
     private func record(_ event: String, _ fields: [String: String]) {
@@ -115,13 +121,15 @@ struct DemoView: View {
             }
             Text(model.message).font(.caption).foregroundStyle(.orange)
                 .accessibilityIdentifier("itemMessage")
-            HMVerticalFeedView(player: model.player) { item, snapshot in
-                VStack {
-                    Spacer()
-                    Text(item.title ?? item.id)
-                    Text("\(String(describing: snapshot.state)) • \(snapshot.currentTime, specifier: "%.1f")s")
-                }.foregroundStyle(.white).padding(20)
-            }.frame(maxHeight: .infinity)
+            if let item = model.player.currentItem {
+                Text("Engagement: \(String(describing: model.interactions.connectionState(for: item)))")
+                    .font(.caption).accessibilityIdentifier("engagementStatus")
+            }
+            HMVerticalFeedView(player: model.player, layout: HMOverlayLayout.self)
+                .hmTheme(HMTheme(colors: HMTheme.default.colors, fonts: HMTheme.default.fonts,
+                                 icons: HMTheme.default.icons, cornerRadius: HMTheme.default.cornerRadius,
+                                 reactionPalette: ["👍", "🔥", "😆", "😡", "😢"], messageReaction: "👍"))
+                .frame(maxHeight: .infinity)
             Text("\(model.mode) • \(model.player.items.count) items • \(model.player.hasMoreContent ? "More pages" : "End of feed")")
                 .font(.caption).accessibilityIdentifier("feedStatus")
             HStack {
