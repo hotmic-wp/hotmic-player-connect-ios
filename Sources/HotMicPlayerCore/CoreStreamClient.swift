@@ -37,7 +37,8 @@ import HotMicPlayer
     func playlistItem() throws -> HMMediaItem {
         let resolved = try resolvedItem()
         return HMMediaItem(id: HMMediaItem.hotmicStream(id).id, source: .url(resolved.url, format: .auto),
-                           posterURL: resolved.poster, title: resolved.title, durationHint: resolved.duration)
+                           posterURL: resolved.poster, title: resolved.title, durationHint: resolved.duration,
+                           metadata: ["hotmic.namespace": "hotmic", "hotmic.streamID": id])
     }
 }
 

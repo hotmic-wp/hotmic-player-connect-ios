@@ -11,14 +11,14 @@ Dir.chdir(__dir__) do
   Dir['../Tests/HotMicPlayerCoreTests/*.swift'].sort.each { |f| tests.source_build_phase.add_file_reference(test_group.new_file(File.basename(f))) }
   player = project.new(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference)
   player.repositoryURL = 'https://github.com/hotmic-wp/hotmic-player-sdk'
-  player.requirement = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '0.3.0' }
+  player.requirement = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '0.4.1' }
   core = project.new(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference)
   core.repositoryURL = 'https://github.com/hotmic-wp/hotmic-core-ios'
   core.requirement = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '1.0.2' }
   local = project.new(Xcodeproj::Project::Object::XCLocalSwiftPackageReference)
   local.relative_path = '..'
   project.root_object.package_references.concat([player, core, local])
-  [[app, player, 'HotMicPlayer'], [app, core, 'HotMicCore'], [app, local, 'HotMicPlayerCore'],
+  [[app, player, 'HotMicPlayer'], [app, player, 'HotMicPlayerUI'], [app, core, 'HotMicCore'], [app, local, 'HotMicPlayerCore'],
    [tests, local, 'HotMicPlayerCore'], [tests, player, 'HotMicPlayer'], [tests, core, 'HotMicCore']].each do |target, package, name|
     dep = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
     dep.package = package; dep.product_name = name

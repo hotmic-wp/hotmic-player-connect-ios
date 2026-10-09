@@ -1,13 +1,13 @@
 # HotMicPlayerCore
 
-Optional HotMic streams adapter for [HotMicPlayer](https://github.com/hotmic-wp/hotmic-player-sdk). iOS 17+, Swift 5 language mode with Swift tools 6.0+. The player stays dependency-free; this separate package adds the HotMicCore binary dependency. VOD only. No sessions, chat, polls or reactions.
+Optional HotMic streams adapter for [HotMicPlayer](https://github.com/hotmic-wp/hotmic-player-sdk). iOS 17+, Swift 5 language mode with Swift tools 6.0+. The player stays dependency-free; this separate package adds the HotMicCore binary dependency. VOD only. Optional session-backed chat, message reactions and polls.
 
 ## Install
 
-Add these packages in Xcode (or use the equivalent SwiftPM dependencies), and link `HotMicPlayer` and `HotMicPlayerCore` to your app target:
+Add these packages in Xcode (or use the equivalent SwiftPM dependencies), and link `HotMicPlayer`, `HotMicPlayerUI` (for the overlay) and `HotMicPlayerCore` to your app target:
 
 ```swift
-.package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", from: "0.3.0"),
+.package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", from: "0.4.1"),
 .package(url: "https://github.com/hotmic-wp/hotmic-player-core-ios", branch: "main")
 ```
 
@@ -19,19 +19,21 @@ The adapter is not tagged yet; use `main` after this milestone merges, or the re
 import SwiftUI
 import HotMicCore
 import HotMicPlayer
+import HotMicPlayerUI
 import HotMicPlayerCore
 @MainActor struct Feed: View {
     @State private var player: HMPlayer
     init(client: HotMicClient) {
-        let player = HMPlayer(resolver: CoreItemResolver(client: client))
+        let player = HMPlayer(resolver: CoreItemResolver(client: client),
+                              interactions: CoreInteractionSource(client: client))
         player.playlistSource = CorePlaylistSource(client: client)
         _player = State(initialValue: player)
     }
-    var body: some View {
-        HMVerticalFeedView(player: player).task { await player.start() }
-    }
+    var body: some View { HMVerticalFeedView(player: player, layout: HMOverlayLayout.self).task { await player.start() } }
 }
 ```
+
+Hosts **must set `player.isFeedVisible = false` when backgrounded or when the feed is hidden**, restoring it on foreground/visibility. That closes current/next sessions and prevents background polling; see the demo’s `scenePhase` handler.
 
 Create `HotMicClient(apiKey:accessToken:)` with credentials delivered securely to your host app. For by-ID playback, call `player.replaceAll([.hotmicStream(streamID)])` on the main actor. Keep the client and adapters scoped to the signed-in user; replace them when credentials change.
 
@@ -43,38 +45,36 @@ Create `HotMicClient(apiKey:accessToken:)` with credentials delivered securely t
 | `HMMediaItem.hotmicStream(_:)` | Reference with playlist identity `hotmic:<id>`. Uses the same identity as source items, allowing the player to drop overlaps. |
 | `CorePlaylistSource(client:query:)` | `HMPlaylistSource`; default VOD-only `HotMicStreamQuery`. Preserves supplied filters, user and limit. Nil cursor starts at the query's page (minimum 1); returned cursor follows `pagination.currentPage + 1`, and nil ends at `hasNext == false`. Filters non-VOD and missing-URL summaries before insertion; empty filtered pages continue. Maps directly to URL items, with no by-ID fetch. |
 | `HotMicPlayerCoreError` | `unsupportedNamespace(String)`, `notVOD(streamID:)`, `missingVODURL(streamID:)`, `invalidCursor(String)`, `invalidPagination`. `Error`, `LocalizedError`, `Equatable`, `Sendable`. Core transport/authentication errors pass through unchanged. |
-| `HMPlayer.skipFailedHotMicItems(using:)` | Main-actor observer returning `Task<Void, Never>`. Removes only references rejected with this adapter's terminal non-VOD/missing-URL error; handles upcoming, final and only entries. Retain and cancel the task on dismissal. |
+| `CoreInteractionSource(client:nextSessionDelay:)` | Main-actor observable `HMInteractionSource`; one per player/user. Prepares next after a configurable current-item dwell (default 1 second), promotes current without restarting, stops outside both roles. Opt-in: the player's default interaction source is empty. |
+| `CoreInteractionSource.connectionState(for:)` | `.idle`, `.starting`, `.connected`, `.reconnecting(attempt:)`, `.disconnected`, `.failed`. Playback continues independently. Transient startup failures stop and retry with a new session while current (1/2/4… seconds, capped at 30); authentication/permanent failures wait for leave/re-entry. Transient failed next preparation retries on promotion. Core handles polling reconnects within the existing session. |
+| `HMPlayer.skipFailedHotMicItems(using:)` | Deprecated compatibility helper. Prefer native `HMPlayerConfiguration.failedItemPolicy`, default `.skip`, available since player 0.3.1. |
 
 Core uses offset/page-number pagination, not a snapshot of the catalogue. VODs published mid-session can shift page boundaries and be skipped in that browsing session; overlapping duplicates are handled by the player. Restart the feed to refresh the catalogue.
 
-There is no Core implementation of `HMInteractionSource` in this milestone. The player's default demo interaction source remains its default; supplying real interactions is future work. Signed URL refresh and live playback are unsupported. The adapter's short cache lifetime does not override the player's session-long resolved-item cache; rebuild the playlist/player for changed media or credentials.
+## Engagement and replay
 
-## Interim failed-item policy
+The source advertises chat sending, reactions to messages and poll voting. Core has no stream-level emoji reactions, so those controls stay hidden. Snapshot history and chat batches populate `HMEngagement`; message/poll deletions use the player's moderation APIs, and poll updates use `upsertPoll`. A confirmed send is inserted with the returned server ID at the viewer's current media time. Later echoes reconcile by that ID. Reaction types map to 👍 / 🔥 / 😆 / 😡 / 😢. Core returns a reaction identity, not counts; the adapter updates the known message totals locally and replaces them when Core sends message totals. Polls carry options, response counts, `myAnswer`, creation time and the closed flag; Core supplies no closing timestamp, so closed polls remain visible as results.
 
-HotMicPlayer 0.3.0 reports resolver errors but does not skip failed entries. For by-ID playlists, install this host-side helper **before** edits or playback:
+Only references in namespace `hotmic` receive sessions. `CorePlaylistSource` retains direct URL playback and adds `hotmic.namespace` / `hotmic.streamID` metadata recording the originating reference; `.hotmicStream` carries the same provenance through resolution. `hotmic.streamID` metadata also reaches player analytics sinks; hosts should account for it in their analytics data handling. An arbitrary URL or an ID starting with `hotmic:` does not opt in. Timeline access is inert; engagements and timeline caches are weakly held by the source. Each source is scoped to one player and authenticated user.
 
-```swift
-let resolver = CoreItemResolver(client: client)
-let player = HMPlayer(resolver: resolver)
-let skipTask = player.skipFailedHotMicItems(using: resolver)
-player.replaceAll([.hotmicStream(streamID), .hotmicStream(fallbackID)])
-// On permanent dismissal:
-skipTask.cancel()
-player.teardown()
-```
+**Session cost:** current plus next means **at most two sessions per viewer**. Each polls the platform API (roughly a six-second request window); do not share a source between players. Next preparation waits until current has remained active for `nextSessionDelay` seconds (default 1; zero opens immediately), avoiding speculative opens during a fast binge. This is lifecycle dwell, not accumulated playing time. Obsolete sessions stop concurrently, remain counted until cleanup completes, and each freed slot can open a replacement independently. When both slots are still stopping, new opens wait for capacity, including hiding and teardown. A stopped session is never restarted. Connection loss leaves existing engagement visible while Core reconnects; it does not pause playback.
 
-Source pages already filter unplayable summaries. By-ID references throw a typed error; the player emits `.error(item:kind:)` with `.resolution(description)`. The helper first matches the player's `.resolution` error kind, then consults the **same resolver passed to the player** and switches on its typed `HotMicPlayerCoreError.notVOD` or `.missingVODURL` outcome for that reference ID. It does not inspect or match error message text. The resolver keeps at most 256 recent terminal outcomes and clears an old outcome when a new resolution starts. It removes the matching unchanged item with `remove(ids:)`; this selects the next survivor or becomes idle. It never treats transport/authentication errors as terminal and does not depend on the player's private retry count. Other event subscribers still see the item error. Install one helper per player. The player will gain a native failed-item policy in its next release; this helper will then be deprecated.
+Replay shows **whatever chat history a Core session returns for a VOD**, positioned at `createdAt - liveDate` **only within `[0, duration]`**. Pre-origin and post-recording chat/polls are dropped, rather than piled up at either endpoint. Player 0.4.1 has no non-timed chat/poll representation, so a post-recording poll is also dropped. Core documents `liveDate` as the date the stream went live. Without `liveDate`, every event would otherwise land at zero: missing origin means **no replay timing**, so history chat/polls are dropped. Confirmed viewer sends and their echoes keep the viewer’s playback position even without an origin; missing duration uses the item's duration hint (or zero until supplied). A full time-indexed replay history is a backend dependency, outside this package. This mapping assumes the VOD begins at the stream's live origin; backend trimming could require a future offset contract. Live playback, signed URL refresh and moderation UI remain unsupported.
+
+## Failed-item policy
+
+Use the player's native `failedItemPolicy` (default `.skip`; `.stay` is available). `skipFailedHotMicItems(using:)` remains compiling but is deprecated and is no longer installed in the demo. Native skip keeps failed entries in the playlist and excludes them from automatic traversal; it does not remove them. Source pages still filter non-VOD/missing-URL summaries. The adapter's short resolver cache lifetime does not override the player's session-long resolved-item cache; rebuild the playlist/player for changed media or credentials.
 
 ## Credentials and demo
 
 Access tokens are HS256 JWTs minted by the partner backend. Never ship the API signing secret in an app, source repository or plist. Obtain short-lived tokens through your authenticated backend; never log credentials or raw authentication responses. Core targets the production API and has no base-URL option.
 
-Open `Sample/HotMicPlayerCoreDemo.xcodeproj` and run `HotMicPlayerCoreDemo` on an iPhone simulator. With no credentials, a visible message explains the fake client fallback. The fake feed uses public MDN MP4 and Apple VOD HLS fixtures, filters live/missing-URL summaries, and supplies two overlapping pages. Swipe or tap Next to page. Play ID resolves a reference; Non-VOD and Missing URL demonstrate an item error followed by the valid fallback. Internet access is needed for the public videos, but no HotMic API call occurs in fake mode.
+Open `Sample/HotMicPlayerCoreDemo.xcodeproj` and run `HotMicPlayerCoreDemo` on an iPhone simulator. With no credentials, a visible message explains the fake client fallback. The fake feed uses public MDN MP4 and Apple VOD HLS fixtures, filters live/missing-URL summaries, and supplies two overlapping pages. Swipe or tap Next to page. `HMOverlayLayout` shows scripted 50-message batches, pre-origin/post-VOD chat and polls (which should stay hidden), a valid poll, reconnect/recovery and message/poll deletions after 12 seconds; double-tap a chat row to react, compose a message and tap a poll option. The fake returns confirmed sends without echoing them, just like Core. Its reaction deletion follows four seconds after reacting. Sample-7 deliberately has no `liveDate`. Add `--review-script` alongside `--fake` for the repeatable in-app review flow: a transient first start failure, actions/moderation, a fast binge with one slow stop, and missing-origin history/own sends. Launch with `--fake` to bypass all credential loading and guarantee no HotMic API calls. Play ID resolves a reference; Non-VOD and Missing URL demonstrate an item error followed by the valid fallback. Internet access is needed for the public videos, but no HotMic API call occurs in fake mode.
 
 For authorized real-API verification, supply `HOTMIC_API_KEY` and `HOTMIC_ACCESS_TOKEN` in the Run environment, or put `HotMicCredentials.json` in the running app's **Documents** directory with those two JSON keys. Both values must be nonempty. Environment values take precedence; an absent/incomplete file falls back to fake mode. The file name is ignored repository-wide and the file is never bundled. Do not put credentials in a shared Xcode scheme. No credentials are included here. A real by-ID request also needs a known VOD stream ID; fake error buttons are hidden with credentials.
 
-The sample imports and links the `HotMicPlayerCore` package product, just as a partner app does; it does not compile adapter source files into the app. Its fake uses `@_spi(Testing) import HotMicPlayerCore` to access the two-fetch `CoreStreamClient` seam, projected summary/page initializers and adapter fake-client initializers. These are experimental Testing SPI, hidden from ordinary partner imports and outside the stable public contract. The authenticated path uses the public `HotMicClient` initializers shown above. `PartnerIntegration.swift` compiles the 15-line README example with an ordinary `import HotMicPlayerCore`. `Sample/generate_project.rb` reproduces the checked-in project using the existing `xcodeproj` Ruby gem. Fake-mode evidence (safe event names and fixture IDs only) is written to app Documents as `demo-evidence.jsonl`; real mode writes no evidence.
+The sample imports and links the `HotMicPlayerCore` package product, just as a partner app does; it does not compile adapter source files into the app. Its fake uses `@_spi(Testing) import HotMicPlayerCore` to access the `CoreStreamClient` and `CoreSessionFactory` / `CoreSession` seams and projected binary values. These are experimental Testing SPI, hidden from ordinary partner imports and outside the stable public contract. The authenticated path uses the public `HotMicClient` initializers shown above. `PartnerIntegration.swift` compiles the 15-line README example with an ordinary `import HotMicPlayerCore`. `Sample/generate_project.rb` reproduces the checked-in project using the existing `xcodeproj` Ruby gem. Fake-mode evidence (safe event names and fixture IDs only) is written to app Documents as `demo-evidence.jsonl`; real mode writes no evidence.
 
 ## Validation
 
-See [milestone validation](docs/MILESTONE_4_VALIDATION.md) for simulator evidence, commands, timings and remaining real-API coverage. Unit tests run on iOS because HotMicCore ships only iOS slices. Use the sample scheme's `HotMicPlayerCoreTests` target. Generic device compilation can use `CODE_SIGNING_ALLOWED=NO` without changing signing configuration.
+See [milestone 5b review-fix validation](docs/MILESTONE_5B_REVIEW_FIXES.md) and [initial validation](docs/MILESTONE_5B_VALIDATION.md) for simulator evidence, commands, timings and remaining real-API coverage. Unit tests run on iOS because HotMicCore ships only iOS slices. Use the sample scheme's `HotMicPlayerCoreTests` target. Generic device compilation can use `CODE_SIGNING_ALLOWED=NO` without changing signing configuration.

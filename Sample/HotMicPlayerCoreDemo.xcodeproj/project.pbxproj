@@ -8,15 +8,18 @@
 
 /* Begin PBXBuildFile section */
 		157022CAC691C2800AC25E0A /* PartnerIntegration.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1D005A8C2B8042A39B48F5B /* PartnerIntegration.swift */; };
+		168821FE5653835F56921ABB /* DemoSessions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5F2C8F2A20C02B19B32C3702 /* DemoSessions.swift */; };
 		3F34E55744AE14AAD3F5AA01 /* CoreStreamsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD2843ECBD008778E50CB041 /* CoreStreamsTests.swift */; };
 		4D0BDDC93FA95AC12C52E69C /* HotMicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = 1DE60ADCC02FE98AF7A5305C /* HotMicPlayer */; };
 		54F1A27C414E503CD06BC15B /* HotMicPlayerCoreDemoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5D298B5F85EF38AF66C432B4 /* HotMicPlayerCoreDemoApp.swift */; };
 		58B7B7BA60005D85EA006855 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7B208E5D4F5ED247D736C3F3 /* Foundation.framework */; };
 		7F59C69C1C5B7919E06F37FD /* HotMicCore in Frameworks */ = {isa = PBXBuildFile; productRef = 51DDA5B4AEA19E770FE715D5 /* HotMicCore */; };
 		84DCEAE8AD1F2C93F01B26FE /* DemoClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 07DABC36BD1534EFB49599F9 /* DemoClient.swift */; };
+		890ED212A99389BD9ED6681B /* CoreInteractionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D67655A337B8247929B452F8 /* CoreInteractionTests.swift */; };
 		A09489D23E35891C3C89E00B /* HotMicPlayer in Frameworks */ = {isa = PBXBuildFile; productRef = FCED964C927FE5D4E0C8A967 /* HotMicPlayer */; };
 		A669B59C2ACD660903594C7F /* HotMicCore in Frameworks */ = {isa = PBXBuildFile; productRef = 7DFE7335B787834220AA7519 /* HotMicCore */; };
 		A7620D0D13CEAF7C6EA93FBD /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7B208E5D4F5ED247D736C3F3 /* Foundation.framework */; };
+		E5D58ED09E842526400B2FBF /* HotMicPlayerUI in Frameworks */ = {isa = PBXBuildFile; productRef = AF8E5B3F881AEF9A019129BB /* HotMicPlayerUI */; };
 		EECB225E731CD08157A3182B /* HotMicPlayerCore in Frameworks */ = {isa = PBXBuildFile; productRef = 8AAD274690B818000BC47464 /* HotMicPlayerCore */; };
 		F8AFCCF4F3010C6D41E73259 /* HotMicPlayerCore in Frameworks */ = {isa = PBXBuildFile; productRef = FEF9CFC419C388FC8F45484A /* HotMicPlayerCore */; };
 /* End PBXBuildFile section */
@@ -25,9 +28,11 @@
 		07DABC36BD1534EFB49599F9 /* DemoClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DemoClient.swift; sourceTree = "<group>"; };
 		5A92772CC8333E85FECFDAC5 /* HotMicPlayerCoreTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HotMicPlayerCoreTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		5D298B5F85EF38AF66C432B4 /* HotMicPlayerCoreDemoApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HotMicPlayerCoreDemoApp.swift; sourceTree = "<group>"; };
+		5F2C8F2A20C02B19B32C3702 /* DemoSessions.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DemoSessions.swift; sourceTree = "<group>"; };
 		689D19D0613551426E5E0D05 /* HotMicPlayerCoreDemo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HotMicPlayerCoreDemo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7B208E5D4F5ED247D736C3F3 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		C1D005A8C2B8042A39B48F5B /* PartnerIntegration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PartnerIntegration.swift; sourceTree = "<group>"; };
+		D67655A337B8247929B452F8 /* CoreInteractionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreInteractionTests.swift; sourceTree = "<group>"; };
 		DD2843ECBD008778E50CB041 /* CoreStreamsTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = CoreStreamsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -40,6 +45,7 @@
 				A09489D23E35891C3C89E00B /* HotMicPlayer in Frameworks */,
 				A669B59C2ACD660903594C7F /* HotMicCore in Frameworks */,
 				F8AFCCF4F3010C6D41E73259 /* HotMicPlayerCore in Frameworks */,
+				E5D58ED09E842526400B2FBF /* HotMicPlayerUI in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -81,6 +87,7 @@
 				07DABC36BD1534EFB49599F9 /* DemoClient.swift */,
 				5D298B5F85EF38AF66C432B4 /* HotMicPlayerCoreDemoApp.swift */,
 				C1D005A8C2B8042A39B48F5B /* PartnerIntegration.swift */,
+				5F2C8F2A20C02B19B32C3702 /* DemoSessions.swift */,
 			);
 			name = Demo;
 			path = HotMicPlayerCoreDemo;
@@ -99,6 +106,7 @@
 			isa = PBXGroup;
 			children = (
 				DD2843ECBD008778E50CB041 /* CoreStreamsTests.swift */,
+				D67655A337B8247929B452F8 /* CoreInteractionTests.swift */,
 			);
 			name = Tests;
 			path = ../Tests/HotMicPlayerCoreTests;
@@ -132,6 +140,7 @@
 				FCED964C927FE5D4E0C8A967 /* HotMicPlayer */,
 				7DFE7335B787834220AA7519 /* HotMicCore */,
 				FEF9CFC419C388FC8F45484A /* HotMicPlayerCore */,
+				AF8E5B3F881AEF9A019129BB /* HotMicPlayerUI */,
 			);
 			productName = HotMicPlayerCoreDemo;
 			productReference = 689D19D0613551426E5E0D05 /* HotMicPlayerCoreDemo.app */;
@@ -219,6 +228,7 @@
 				84DCEAE8AD1F2C93F01B26FE /* DemoClient.swift in Sources */,
 				54F1A27C414E503CD06BC15B /* HotMicPlayerCoreDemoApp.swift in Sources */,
 				157022CAC691C2800AC25E0A /* PartnerIntegration.swift in Sources */,
+				168821FE5653835F56921ABB /* DemoSessions.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -227,6 +237,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				3F34E55744AE14AAD3F5AA01 /* CoreStreamsTests.swift in Sources */,
+				890ED212A99389BD9ED6681B /* CoreInteractionTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -465,7 +476,7 @@
 			repositoryURL = "https://github.com/hotmic-wp/hotmic-player-sdk";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.3.0;
+				minimumVersion = 0.4.1;
 			};
 		};
 		279D82EE49BF731CC67939E7 /* XCRemoteSwiftPackageReference "hotmic-core-ios" */ = {
@@ -498,6 +509,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0EB85A1108613BA5BD992747 /* XCLocalSwiftPackageReference ".." */;
 			productName = HotMicPlayerCore;
+		};
+		AF8E5B3F881AEF9A019129BB /* HotMicPlayerUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 03E27B1BD9EEDF861E010FE7 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			productName = HotMicPlayerUI;
 		};
 		FCED964C927FE5D4E0C8A967 /* HotMicPlayer */ = {
 			isa = XCSwiftPackageProductDependency;

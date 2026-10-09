@@ -6,7 +6,8 @@ public extension HMPlayer {
     /// Transport/authentication failures retain the player's retry behavior.
     /// Pass the same resolver used by the player, before starting playback.
     /// Retain the task and cancel it on dismissal.
-    /// This helper will be deprecated when the player gains a native failure policy.
+    /// Deprecated: HotMicPlayer has a native failedItemPolicy since 0.3.1.
+    @available(*, deprecated, message: "Use HMPlayerConfiguration.failedItemPolicy (default: .skip) instead.")
     @MainActor
     func skipFailedHotMicItems(using resolver: CoreItemResolver) -> Task<Void, Never> {
         // Subscribe synchronously so mutations immediately after this call are seen.

@@ -88,6 +88,7 @@ public actor CoreItemResolver: HMItemResolver {
 public extension HMMediaItem {
     /// Creates a HotMic reference with stable playlist identity `hotmic:<id>`.
     static func hotmicStream(_ id: String) -> Self {
-        .reference("hotmic", id: id)
+        HMMediaItem(id: "hotmic:\(id)", source: .reference(namespace: "hotmic", id: id),
+                    metadata: ["hotmic.namespace": "hotmic", "hotmic.streamID": id])
     }
 }
