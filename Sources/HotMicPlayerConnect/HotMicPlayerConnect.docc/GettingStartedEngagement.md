@@ -9,9 +9,9 @@ Link `HotMicPlayerUI` from the player package, then change the streams setup:
 ```swift
 import HotMicPlayerUI
 
-let interactions = CoreInteractionSource(client: client)
-let player = HMPlayer(resolver: CoreItemResolver(client: client), interactions: interactions)
-player.playlistSource = CorePlaylistSource(client: client)
+let interactions = HotMicInteractionSource(client: client)
+let player = HMPlayer(resolver: HotMicItemResolver(client: client), interactions: interactions)
+player.playlistSource = HotMicPlaylistSource(client: client)
 // In your SwiftUI body:
 HMVerticalFeedView(player: player, layout: HMOverlayLayout.self)
 ```
@@ -22,15 +22,15 @@ Core supplies no stream emoji reactions, so those controls stay hidden. The supp
 are 👍 / 🔥 / 😆 / 😡 / 😢. Set the theme’s `messageReaction` to one of these and its `reactionPalette`
 when customizing the UI; the example shows the complete theme initializer.
 
-Read ``CoreInteractionSource/connectionState(for:)`` for engagement status independently of playback.
+Read ``HotMicInteractionSource/connectionState(for:)`` for engagement status independently of playback.
 A prepared next session is promoted without restarting. Session failures never pause media playback.
 
 ## Try the public fake
 
 Open `Examples/HotMicExamples.xcodeproj`, scheme `StreamsAndEngagement`.
-The examples link/import the optional `HotMicPlayerCoreTesting` product. No credentials means an injected
-`CoreStreamClient` and `CoreSessionFactory` from that product; neither contacts HotMic. Production apps
-use the authenticated constructors in `HotMicPlayerCore` without the testing product.
+The examples link/import the optional `HotMicPlayerConnectTesting` product. No credentials means an injected
+`HotMicStreamClient` and `HotMicSessionFactory` from that product; neither contacts HotMic. Production apps
+use the authenticated constructors in `HotMicPlayerConnect` without the testing product.
 Public video fixtures still need internet. Add `--fake --verify` to run the repeatable integration flow
 and write safe fixture evidence in app Documents (`demo-evidence.jsonl`).
 

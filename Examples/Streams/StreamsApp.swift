@@ -1,6 +1,6 @@
 import SwiftUI
 import HotMicPlayer
-import HotMicPlayerCore
+import HotMicPlayerConnect
 
 @main struct StreamsApp: App {
     var body: some Scene { WindowGroup { StreamsFeed() } }

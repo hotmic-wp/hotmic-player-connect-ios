@@ -1,17 +1,17 @@
 import Foundation
 import HotMicCore
-import HotMicPlayerCore
+import HotMicPlayerConnect
 
 /// Injectable stream transport. Implement with a Sendable value or actor; production uses HotMicClient.
-public protocol CoreStreamClient: Sendable {
+public protocol HotMicStreamClient: Sendable {
     /// Fetches one stream summary by its Core ID.
-    func fetchStream(id: String) async throws -> CoreStreamSummary
+    func fetchStream(id: String) async throws -> HotMicFixtureStreamSummary
     /// Fetches a numbered catalogue page preserving the supplied query.
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> CoreStreamPage
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> HotMicFixtureStreamPage
 }
 
 /// A transport-independent stream summary. Sendable; mutate only exclusively owned values.
-public struct CoreStreamSummary: Sendable {
+public struct HotMicFixtureStreamSummary: Sendable {
     /// The Core stream ID.
     public let id: String
     /// Whether the stream is a recorded VOD.
@@ -40,16 +40,16 @@ public struct CoreStreamSummary: Sendable {
 }
 
 /// One numbered catalogue page. Sendable across tasks.
-public struct CoreStreamPage: Sendable {
+public struct HotMicFixtureStreamPage: Sendable {
     /// Stream summaries in server order.
-    public let streams: [CoreStreamSummary]
+    public let streams: [HotMicFixtureStreamSummary]
     /// The page number actually returned by the backend.
     public let currentPage: Int
     /// Whether the catalogue contains another page.
     public let hasNext: Bool
 
     /// Creates a catalogue page for an injected client.
-    public init(streams: [CoreStreamSummary], currentPage: Int, hasNext: Bool) {
+    public init(streams: [HotMicFixtureStreamSummary], currentPage: Int, hasNext: Bool) {
         self.streams = streams; self.currentPage = currentPage; self.hasNext = hasNext
     }
 }

@@ -1,24 +1,24 @@
-# ``HotMicPlayerCoreTesting``
+# ``HotMicPlayerConnectTesting``
 
-Inject fake transports into the real Core adapters for offline previews and tests.
+Inject fake transports into the real Connect adapters for offline previews and tests.
 
 ## Overview
 
-Link this optional product alongside `HotMicPlayerCore` and import both modules. Production integrations
+Link this optional product alongside `HotMicPlayerConnect` and import both modules. Production integrations
 using `HotMicClient` do not need the testing product. These fixture protocols and values are separate
 from the small runtime API. All session operations run on the main actor; stream clients and raw
 value projections are Sendable. A factory must create fresh single-use sessions, subscribe events before
 startup, and await cleanup in an idempotent stop implementation.
 
 ```swift
-import HotMicPlayerCore
-import HotMicPlayerCoreTesting
+import HotMicPlayerConnect
+import HotMicPlayerConnectTesting
 
-// fakeClient conforms to CoreStreamClient; fakeSessions conforms to CoreSessionFactory.
-let resolver = CoreItemResolver(client: fakeClient)
-let playlist = CorePlaylistSource(client: fakeClient)
+// fakeClient conforms to HotMicStreamClient; fakeSessions conforms to HotMicSessionFactory.
+let resolver = HotMicItemResolver(client: fakeClient)
+let playlist = HotMicPlaylistSource(client: fakeClient)
 // Construct the interaction source on the main actor.
-let interactions = CoreInteractionSource(factory: fakeSessions)
+let interactions = HotMicInteractionSource(factory: fakeSessions)
 ```
 
 The package’s two examples contain complete fake implementations. The adapter remains responsible for
@@ -28,15 +28,15 @@ accept the same cache/query/dwell settings as the runtime, plus `retryBaseDelay`
 ## Topics
 
 ### Stream fixtures
-- ``CoreStreamClient``
-- ``CoreStreamSummary``
-- ``CoreStreamPage``
+- ``HotMicStreamClient``
+- ``HotMicFixtureStreamSummary``
+- ``HotMicFixtureStreamPage``
 
 ### Session fixtures
-- ``CoreSessionFactory``
-- ``CoreSession``
-- ``CoreSessionSnapshot``
-- ``CoreSessionEvent``
-- ``CoreChat``
-- ``CoreMessageReaction``
-- ``CorePoll``
+- ``HotMicSessionFactory``
+- ``HotMicSession``
+- ``HotMicSessionSnapshot``
+- ``HotMicSessionEvent``
+- ``HotMicChat``
+- ``HotMicMessageReaction``
+- ``HotMicFixturePoll``

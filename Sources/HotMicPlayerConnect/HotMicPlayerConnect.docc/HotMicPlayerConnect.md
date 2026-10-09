@@ -1,4 +1,4 @@
-# ``HotMicPlayerCore``
+# ``HotMicPlayerConnect``
 
 Play HotMic VOD streams and optionally add session-backed chat, message reactions and polls.
 
@@ -22,9 +22,9 @@ covers playback, playlists, errors, caching, analytics and custom layouts.
 - <doc:Moderation>
 
 ### Streams
-- ``CoreItemResolver``
-- ``CorePlaylistSource``
-- ``HotMicPlayerCoreError``
+- ``HotMicItemResolver``
+- ``HotMicPlaylistSource``
+- ``HotMicPlayerConnectError``
 
 ### Engagement
-- ``CoreInteractionSource``
+- ``HotMicInteractionSource``

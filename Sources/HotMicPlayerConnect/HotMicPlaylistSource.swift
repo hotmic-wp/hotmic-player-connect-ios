@@ -4,8 +4,8 @@ import HotMicPlayer
 
 /// Pages Core summaries into direct VOD URL items without per-stream fetches.
 /// Non-VOD and missing-URL entries are filtered before reaching the player.
-public struct CorePlaylistSource: HMPlaylistSource {
-    private let client: any _CoreStreamClient
+public struct HotMicPlaylistSource: HMPlaylistSource {
+    private let client: any _HotMicStreamClient
     private let query: HotMicStreamQuery
 
     /// The default query includes VOD only. A supplied query retains its filters,
@@ -13,11 +13,11 @@ public struct CorePlaylistSource: HMPlaylistSource {
     public init(client: HotMicClient, query: HotMicStreamQuery = HotMicStreamQuery(
         includesLive: false, includesScheduled: false, includesVOD: true
     )) {
-        self.init(client: LiveCoreStreamClient(client: client), query: query)
+        self.init(client: LiveHotMicStreamClient(client: client), query: query)
     }
 
     /// Creates an adapter with an injectable client, for offline previews or custom transport.
-    package init(client: any _CoreStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
+    package init(client: any _HotMicStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
         includesLive: false, includesScheduled: false, includesVOD: true
     )) {
         self.client = client
@@ -31,7 +31,7 @@ public struct CorePlaylistSource: HMPlaylistSource {
         var request = query
         if let cursor {
             guard let page = Int(cursor), page > 0 else {
-                throw HotMicPlayerCoreError.invalidCursor(cursor)
+                throw HotMicPlayerConnectError.invalidCursor(cursor)
             }
             request.page = page
         } else {
@@ -42,7 +42,7 @@ public struct CorePlaylistSource: HMPlaylistSource {
         let nextCursor: String?
         if page.hasNext {
             guard page.currentPage >= request.page, page.currentPage < Int.max else {
-                throw HotMicPlayerCoreError.invalidPagination
+                throw HotMicPlayerConnectError.invalidPagination
             }
             nextCursor = String(page.currentPage + 1)
         } else {

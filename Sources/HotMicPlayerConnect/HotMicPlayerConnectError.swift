@@ -1,7 +1,7 @@
 import Foundation
 
 /// Adapter errors. Core transport/authentication errors are propagated unchanged.
-public enum HotMicPlayerCoreError: Error, Equatable, Sendable, LocalizedError {
+public enum HotMicPlayerConnectError: Error, Equatable, Sendable, LocalizedError {
     /// The reference namespace is not `hotmic`.
     case unsupportedNamespace(String)
     /// The stream is live or scheduled, rather than recorded VOD.
@@ -19,9 +19,9 @@ public enum HotMicPlayerCoreError: Error, Equatable, Sendable, LocalizedError {
         case .unsupportedNamespace(let namespace):
             return "Unsupported stream namespace: \(namespace)."
         case .notVOD(let id):
-            return "HotMicPlayerCore.notVOD: Stream \(id) is not VOD."
+            return "HotMicPlayerConnect.notVOD: Stream \(id) is not VOD."
         case .missingVODURL(let id):
-            return "HotMicPlayerCore.missingVODURL: Stream \(id) has no VOD URL."
+            return "HotMicPlayerConnect.missingVODURL: Stream \(id) has no VOD URL."
         case .invalidCursor(let cursor):
             return "Invalid HotMic playlist cursor: \(cursor)."
         case .invalidPagination:

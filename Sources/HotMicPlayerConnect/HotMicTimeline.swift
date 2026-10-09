@@ -2,22 +2,22 @@ import Foundation
 import Observation
 import HotMicPlayer
 
-@MainActor final class CoreTimeline: HMStreamTimeline {
+@MainActor final class HotMicTimeline: HMStreamTimeline {
     let streamID: String?
     private var knownDuration: TimeInterval = 0
     var duration: TimeInterval { knownDuration }
     var liveDate: Date?
     weak var engagement: HMEngagement? { didSet { observeDurationHint() } }
     var polls: [String: HMPoll] = [:]
-    var messages: [String: _CoreChat] = [:]
-    private var rawPolls: [String: _CorePoll] = [:]
+    var messages: [String: _HotMicChat] = [:]
+    private var rawPolls: [String: _HotMicPoll] = [:]
     private var messageOrder: [String] = []
     private var pollOrder: [String] = []
     // Bounds apply while timing is unknown as well as after mapping.
     static let messageCapacity = 2_000
     static let pollCapacity = 100
     // Keep viewer offsets when Core later supplies the same message's wall time.
-    var pendingDeletions: [_CoreSessionEvent] = []
+    var pendingDeletions: [_HotMicSessionEvent] = []
     var ownOffsets: [String: TimeInterval] = [:]
     private var byID: [String: HMTimelineEvent] = [:]
     private var acceptedIDs: Set<String> = []
@@ -59,7 +59,7 @@ import HotMicPlayer
         }
         supplyDuration(hint)
     }
-    func remember(_ chat: _CoreChat) {
+    func remember(_ chat: _HotMicChat) {
         if messages[chat.id] == nil { messageOrder.append(chat.id) }
         messages[chat.id] = chat
         while messageOrder.count > Self.messageCapacity {
@@ -68,7 +68,7 @@ import HotMicPlayer
             if byID.removeValue(forKey: id) != nil { batchChanged = true }
         }
     }
-    func remember(_ poll: _CorePoll) {
+    func remember(_ poll: _HotMicPoll) {
         if rawPolls[poll.id] == nil { pollOrder.append(poll.id) }
         rawPolls[poll.id] = poll
         while pollOrder.count > Self.pollCapacity {
@@ -78,7 +78,7 @@ import HotMicPlayer
         }
         mapPoll(poll)
     }
-    private func mapPoll(_ poll: _CorePoll) {
+    private func mapPoll(_ poll: _HotMicPoll) {
         guard let offset = offset(poll.createdAt) else { return }
         let mapped = HMPoll(id: poll.id, question: poll.question,
                             options: poll.options.map { .init(id: $0.id, text: $0.text, votes: max(0, $0.votes)) },
@@ -89,7 +89,7 @@ import HotMicPlayer
     func removePoll(_ id: String) {
         rawPolls[id] = nil; polls[id] = nil; pollOrder.removeAll { $0 == id }
     }
-    func event(_ chat: _CoreChat) -> HMTimelineEvent? {
+    func event(_ chat: _HotMicChat) -> HMTimelineEvent? {
         guard let offset = ownOffsets[chat.id].map(clamp) ?? offset(chat.createdAt) else { return nil }
         return HMTimelineEvent(id: chat.id, offset: offset, kind: .chat,
                                author: chat.author, text: chat.text, avatarURL: chat.avatar,

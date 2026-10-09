@@ -1,31 +1,31 @@
 import Foundation
 import HotMicCore
-import HotMicPlayerCore
+import HotMicPlayerConnect
 
 /// Creates fresh, single-use engagement sessions. Access on the main actor.
-@MainActor public protocol CoreSessionFactory {
+@MainActor public protocol HotMicSessionFactory {
     /// Constructs an inert session; networking begins at start(). Main actor.
-    func makeSession(streamID: String) -> any CoreSession
+    func makeSession(streamID: String) -> any HotMicSession
 }
 
 /// An injectable single-use Core engagement session. All access is on the main actor.
-@MainActor public protocol CoreSession: AnyObject {
+@MainActor public protocol HotMicSession: AnyObject {
     /// Events subscribed before start; finish the stream when stopped.
-    var events: AsyncStream<CoreSessionEvent> { get }
+    var events: AsyncStream<HotMicSessionEvent> { get }
     /// Opens the session and returns its initial snapshot; throw on startup failure.
-    func start() async throws -> CoreSessionSnapshot
+    func start() async throws -> HotMicSessionSnapshot
     /// Closes polling and awaits cleanup. Must be idempotent, including after failed start.
     func stop() async
     /// Sends text and returns a server-confirmed message identity.
-    func sendChat(_ text: String) async throws -> CoreChat
+    func sendChat(_ text: String) async throws -> HotMicChat
     /// Adds a Core reaction type (like/fire/laugh/anger/sadness) to a message.
-    func addReaction(_ type: String, to messageID: String) async throws -> CoreMessageReaction
+    func addReaction(_ type: String, to messageID: String) async throws -> HotMicMessageReaction
     /// Submits the selected poll option; emit a poll event to reconcile the viewer vote.
     func vote(pollID: String, optionID: String) async throws
 }
 
 /// Raw Core chat with wall-clock creation time. Sendable across tasks.
-public struct CoreChat: Sendable {
+public struct HotMicChat: Sendable {
     /// Stable server identity.
     public let id: String
     /// Display name of the message author.
@@ -48,7 +48,7 @@ public struct CoreChat: Sendable {
 }
 
 /// Message reaction identity supplied by Core. Sendable across tasks.
-public struct CoreMessageReaction: Sendable {
+public struct HotMicMessageReaction: Sendable {
     /// The affected server message ID.
     public let messageID: String
     /// The authenticated viewer ID in snapshots, or reacting user ID in reactions.
@@ -63,7 +63,7 @@ public struct CoreMessageReaction: Sendable {
 }
 
 /// Raw Core poll state. Sendable across tasks.
-public struct CorePoll: Sendable {
+public struct HotMicFixturePoll: Sendable {
     /// A poll option and its authoritative response count. Sendable across tasks.
     public struct Option: Sendable {
         /// Stable server identity.
@@ -97,7 +97,7 @@ public struct CorePoll: Sendable {
 }
 
 /// Initial stream timing, viewer and history for a session. Sendable across tasks.
-public struct CoreSessionSnapshot: Sendable {
+public struct HotMicSessionSnapshot: Sendable {
     /// Stream live origin used to position VOD history; nil means unknown.
     public let liveDate: Date?
     /// Optional VOD duration in seconds; nil means unknown.
@@ -105,21 +105,21 @@ public struct CoreSessionSnapshot: Sendable {
     /// The authenticated viewer ID in snapshots, or reacting user ID in reactions.
     public let userID: String
     /// Raw chat history returned at startup; not guaranteed to cover the full VOD.
-    public let messages: [CoreChat]
+    public let messages: [HotMicChat]
     /// Raw polls returned at startup.
-    public let polls: [CorePoll]
+    public let polls: [HotMicFixturePoll]
     /// Creates a transport-independent value for an injected session.
     public init(liveDate: Date?, duration: TimeInterval?, userID: String,
-                messages: [CoreChat] = [], polls: [CorePoll] = []) {
+                messages: [HotMicChat] = [], polls: [HotMicFixturePoll] = []) {
         self.liveDate = liveDate; self.duration = duration; self.userID = userID
         self.messages = messages; self.polls = polls
     }
 }
 
 /// Core session updates projected for the adapter. Sendable across tasks.
-public enum CoreSessionEvent: Sendable {
+public enum HotMicSessionEvent: Sendable {
     /// Engagement connectivity changed independently of playback.
-    case connection(CoreInteractionSource.ConnectionState)
+    case connection(HotMicInteractionSource.ConnectionState)
     /// Session startup failed; transient errors may create a fresh session after backoff.
     case failed(HotMicError)
     /// Stream timing changed; retained history is remapped when timing becomes available.
@@ -129,13 +129,13 @@ public enum CoreSessionEvent: Sendable {
     /// The stream was deleted; the adapter closes the session.
     case deleted
     /// New messages and reaction additions, including server echoes.
-    case chat(messages: [CoreChat], reactions: [CoreMessageReaction])
+    case chat(messages: [HotMicChat], reactions: [HotMicMessageReaction])
     /// A moderator deleted a message by server ID.
     case messageDeleted(String)
     /// A reaction identity was removed.
-    case reactionDeleted(CoreMessageReaction)
+    case reactionDeleted(HotMicMessageReaction)
     /// A poll was created or updated.
-    case poll(CorePoll)
+    case poll(HotMicFixturePoll)
     /// A moderator deleted a poll by server ID.
     case pollDeleted(String)
 }
