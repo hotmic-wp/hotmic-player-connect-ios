@@ -1,5 +1,5 @@
 import Foundation
-@_spi(Testing) import HotMicPlayerCore
+import HotMicPlayerCore
 
 /// Runs only in fake mode. Timers model session batches, connection recovery and moderation.
 @MainActor final class DemoSessions: CoreSessionFactory {
@@ -54,6 +54,8 @@ import Foundation
             do {
                 try await Task.sleep(for: .seconds(1))
                 guard let self, !self.stopped else { return }
+                self.continuation.yield(.stream(liveDate: self.origin, duration: self.id == "sample-6" ? 1800 : 5.05))
+                self.owner?.record("timingArrived", ["id": self.id])
                 let batch = [self.chat("batch", "Sam", "This arrived in a chat batch", at: 0.5)] + (1..<50).map {
                     self.chat("burst-\($0)", "Replay viewer", "Batch message \($0)", at: 0.5 + Double($0) / 50)
                 }
@@ -84,7 +86,7 @@ import Foundation
                 self.owner?.record("lateModeratedEcho", ["id": self.id])
             } catch { }
         }
-        return CoreSessionSnapshot(liveDate: id == "sample-7" ? nil : origin, duration: id == "sample-6" ? 1800 : 5.05,
+        return CoreSessionSnapshot(liveDate: id == "sample-7" ? nil : origin, duration: id == "sample-1" ? nil : (id == "sample-6" ? 1800 : 5.05),
                                    userID: "demo-viewer", messages: [chat("welcome", "Mara", "Welcome to \(id)", at: 0)], polls: [])
     }
     func stop() async {

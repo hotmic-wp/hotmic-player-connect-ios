@@ -1,5 +1,5 @@
 {
-  "originHash" : "cd69f0be27b62da8d201ee83b906d41a2d9f940570815f208244778ad586af7e",
+  "originHash" : "0814f6503af95430931b744cde0cfb66abd333ff28e559069aac67e3c25c5c49",
   "pins" : [
     {
       "identity" : "hotmic-core-ios",
@@ -15,8 +15,8 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/hotmic-wp/hotmic-player-sdk",
       "state" : {
-        "revision" : "84452f34926dc04b844ee6076bcef652584f183e",
-        "version" : "0.4.1"
+        "revision" : "f03b5a4c7163e09675fd2e3791b446d449c34ba7",
+        "version" : "1.0.0-rc.1"
       }
     }
   ],
