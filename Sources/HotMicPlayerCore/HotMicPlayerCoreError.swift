@@ -13,7 +13,7 @@ public enum HotMicPlayerCoreError: Error, Equatable, Sendable, LocalizedError {
     /// The backend page failed to advance safely.
     case invalidPagination
 
-    /// Human-readable description; the interim skip helper matches typed cases.
+    /// Human-readable validation error description.
     public var errorDescription: String? {
         switch self {
         case .unsupportedNamespace(let namespace):

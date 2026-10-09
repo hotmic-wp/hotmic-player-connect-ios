@@ -1,7 +1,8 @@
 import XCTest
 import HotMicPlayer
 import HotMicCore
-@_spi(Testing) @testable import HotMicPlayerCore
+@testable import HotMicPlayerCore
+@testable import HotMicPlayerCoreTesting
 
 @MainActor private final class Sessions: CoreSessionFactory {
     var sessions: [String: [Session]] = [:]

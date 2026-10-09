@@ -25,7 +25,7 @@ Dir.chdir(__dir__) do
   group = project.main_group.new_group('Tests', '../Tests/HotMicPlayerCoreTests')
   Dir['../Tests/HotMicPlayerCoreTests/*.swift'].sort.each { |f| tests.source_build_phase.add_file_reference(group.new_file(File.basename(f))) }
   (apps + [tests]).each do |target|
-    dependencies = [[local, 'HotMicPlayerCore'], [player, 'HotMicPlayer'], [core, 'HotMicCore']]
+    dependencies = [[local, 'HotMicPlayerCore'], [local, 'HotMicPlayerCoreTesting'], [player, 'HotMicPlayer'], [core, 'HotMicCore']]
     dependencies << [player, 'HotMicPlayerUI'] if target.name == 'StreamsAndEngagement'
     dependencies.each do |package, name|
       dep = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)

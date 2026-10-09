@@ -3,6 +3,7 @@ import Observation
 import HotMicCore
 import HotMicPlayer
 import HotMicPlayerCore
+import HotMicPlayerCoreTesting
 
 /// Shared credential/fake setup, leaving the two app entry points small.
 @MainActor @Observable final class ExampleIntegration {

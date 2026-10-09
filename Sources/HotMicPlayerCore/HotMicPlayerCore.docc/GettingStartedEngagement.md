@@ -28,7 +28,9 @@ A prepared next session is promoted without restarting. Session failures never p
 ## Try the public fake
 
 Open `Examples/HotMicExamples.xcodeproj`, scheme `StreamsAndEngagement`.
-No credentials means an injected `CoreStreamClient` and `CoreSessionFactory`; neither contacts HotMic.
+The examples link/import the optional `HotMicPlayerCoreTesting` product. No credentials means an injected
+`CoreStreamClient` and `CoreSessionFactory` from that product; neither contacts HotMic. Production apps
+use the authenticated constructors in `HotMicPlayerCore` without the testing product.
 Public video fixtures still need internet. Add `--fake --verify` to run the repeatable integration flow
 and write safe fixture evidence in app Documents (`demo-evidence.jsonl`).
 

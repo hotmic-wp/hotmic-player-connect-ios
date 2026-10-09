@@ -5,7 +5,7 @@ import HotMicPlayer
 /// Pages Core summaries into direct VOD URL items without per-stream fetches.
 /// Non-VOD and missing-URL entries are filtered before reaching the player.
 public struct CorePlaylistSource: HMPlaylistSource {
-    private let client: any CoreStreamClient
+    private let client: any _CoreStreamClient
     private let query: HotMicStreamQuery
 
     /// The default query includes VOD only. A supplied query retains its filters,
@@ -17,7 +17,7 @@ public struct CorePlaylistSource: HMPlaylistSource {
     }
 
     /// Creates an adapter with an injectable client, for offline previews or custom transport.
-    public init(client: any CoreStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
+    package init(client: any _CoreStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
         includesLive: false, includesScheduled: false, includesVOD: true
     )) {
         self.client = client

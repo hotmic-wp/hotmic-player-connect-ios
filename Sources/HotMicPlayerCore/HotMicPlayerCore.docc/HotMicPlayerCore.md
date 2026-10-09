@@ -28,15 +28,3 @@ covers playback, playlists, errors, caching, analytics and custom layouts.
 
 ### Engagement
 - ``CoreInteractionSource``
-
-### Injectable clients
-- ``CoreStreamClient``
-- ``CoreStreamSummary``
-- ``CoreStreamPage``
-- ``CoreSessionFactory``
-- ``CoreSession``
-- ``CoreSessionSnapshot``
-- ``CoreSessionEvent``
-- ``CoreChat``
-- ``CoreMessageReaction``
-- ``CorePoll``

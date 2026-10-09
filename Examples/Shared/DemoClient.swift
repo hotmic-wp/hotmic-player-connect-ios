@@ -1,6 +1,7 @@
 import Foundation
 import HotMicCore
 import HotMicPlayerCore
+import HotMicPlayerCoreTesting
 
 /// Public MDN MP4 and Apple VOD HLS fixtures. No HotMic API is contacted.
 actor DemoClient: CoreStreamClient {

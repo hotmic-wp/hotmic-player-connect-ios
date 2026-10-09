@@ -13,7 +13,7 @@ Add both packages in Xcode or Swift Package Manager. Use `exact: "1.0.0-rc.1"` f
 .package(url: "https://github.com/hotmic-wp/hotmic-player-core-ios", exact: "1.0.0-rc.1")
 ```
 
-Link `HotMicPlayer` and `HotMicPlayerCore`. Link the transitive `HotMicCore` product when importing it
+The player repository requires read access. Link `HotMicPlayer` and `HotMicPlayerCore`. Link the transitive `HotMicCore` product when importing it
 to construct a client. Engagement UI additionally links `HotMicPlayerUI` from the player package.
 
 ## Level 1: streams
@@ -105,7 +105,8 @@ analytics data handling. Arbitrary URLs or an ID prefix alone never opt into eng
 
 Open [Examples/HotMicExamples.xcodeproj](Examples/HotMicExamples.xcodeproj). Choose `Streams` (roughly
 40 lines) or `StreamsAndEngagement`. Shared support holds fake clients, credentials and verification
-helpers. Both use ordinary public imports and the actual Core adapters.
+helpers. Both use ordinary public imports and the actual Core adapters. Examples also link/import
+`HotMicPlayerCoreTesting` for fake clients; production apps need only `HotMicPlayerCore`.
 `Streams` links no `HotMicPlayerUI` product. No credentials selects fake mode with public MDN MP4/Apple
 VOD HLS fixtures (internet needed for videos). `--fake` bypasses all credential loading and guarantees
 no HotMic API calls. `--fake --verify` runs an optional fake-only integration script, including paging
@@ -137,11 +138,18 @@ Read the [DocC guides](Sources/HotMicPlayerCore/HotMicPlayerCore.docc/HotMicPlay
 This package follows semver: compatible additions in minor releases, fixes in patches, breaking changes
 in majors with deprecations where practical. RCs are prereleases for integration evaluation before
 the stable release.
-`HotMicPlayerCore.version` reports `1.0.0-rc.1`. Prefer native `failedItemPolicy` over the retained deprecated
-`skipFailedHotMicItems(using:)` helper. Testing SPI is outside the stable public contract.
+`HotMicPlayerCore.version` reports `1.0.0-rc.1`. The interim `skipFailedHotMicItems(using:)` helper
+was removed in 1.0; use native `HMPlayerConfiguration.failedItemPolicy`. Injectable clients, projected
+fixture values and accelerated retry controls live in the optional `HotMicPlayerCoreTesting` product,
+separate from the runtime API.
 
 CI runs on macOS for PRs and pushes to `main` only, with a nine-minute limit. It builds both examples
 (and the package) for simulator and unsigned generic device, runs strict DocC analysis, then the unit
-suite once. Run `bash .github/scripts/validate-release.sh` locally with an available iPhone 17 Pro simulator.
+suite once. Hosted CI requires `PLAYER_SDK_READ_TOKEN`, a read-only contents token for the private
+player repository; the workflow configures temporary Git authentication before package resolution.
+`PARTNER_DOCS_DENYLIST` may optionally supply newline-separated private terms to the content check.
+Run `bash .github/scripts/validate-release.sh` locally with an available iOS simulator. Selection prefers
+an installed iPhone model and falls back to another available iPhone; `SIMULATOR_UDID` can select an
+existing device explicitly. `BUILD_ONLY=1` defers the suite for a local example smoke run.
 No global installation, credentials or signing configuration changes are needed. The checked-in project
 can be regenerated with `ruby Examples/generate_project.rb` if the `xcodeproj` gem is already installed.

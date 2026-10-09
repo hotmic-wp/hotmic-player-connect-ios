@@ -3,30 +3,30 @@ import HotMicCore
 import HotMicPlayer
 
 /// Injectable stream transport. Implement with a Sendable value or actor; production uses HotMicClient.
-public protocol CoreStreamClient: Sendable {
+package protocol _CoreStreamClient: Sendable {
     /// Fetches one stream summary by its Core ID.
-    func fetchStream(id: String) async throws -> CoreStreamSummary
+    func fetchStream(id: String) async throws -> _CoreStreamSummary
     /// Fetches one stream summary by its Core ID.
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> CoreStreamPage
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _CoreStreamPage
 }
 
 /// A transport-independent stream summary. Sendable; mutate only exclusively owned values.
-public struct CoreStreamSummary: Sendable {
+package struct _CoreStreamSummary: Sendable {
     /// The Core stream ID.
-    public let id: String
+    package let id: String
     /// Whether the stream is a recorded VOD.
-    public let isVOD: Bool
+    package let isVOD: Bool
     /// Playable VOD URL; nil means unavailable.
-    public let vodURL: URL?
+    package let vodURL: URL?
     /// Optional poster image URL.
-    public var thumbnail: URL? = nil
+    package var thumbnail: URL? = nil
     /// Optional stream title.
-    public var title: String? = nil
+    package var title: String? = nil
     /// Optional recording duration in seconds.
-    public var duration: TimeInterval? = nil
+    package var duration: TimeInterval? = nil
 
     /// Creates a stream summary for an injected client.
-    public init(id: String, isVOD: Bool, vodURL: URL?, thumbnail: URL? = nil,
+    package init(id: String, isVOD: Bool, vodURL: URL?, thumbnail: URL? = nil,
          title: String? = nil, duration: TimeInterval? = nil) {
         self.id = id; self.isVOD = isVOD; self.vodURL = vodURL
         self.thumbnail = thumbnail; self.title = title; self.duration = duration
@@ -52,32 +52,32 @@ public struct CoreStreamSummary: Sendable {
 }
 
 /// One numbered catalogue page. Sendable across tasks.
-public struct CoreStreamPage: Sendable {
+package struct _CoreStreamPage: Sendable {
     /// Stream summaries in server order.
-    public let streams: [CoreStreamSummary]
+    package let streams: [_CoreStreamSummary]
     /// The page number actually returned by the backend.
-    public let currentPage: Int
+    package let currentPage: Int
     /// Whether the catalogue contains another page.
-    public let hasNext: Bool
+    package let hasNext: Bool
 
     /// Creates a catalogue page for an injected client.
-    public init(streams: [CoreStreamSummary], currentPage: Int, hasNext: Bool) {
+    package init(streams: [_CoreStreamSummary], currentPage: Int, hasNext: Bool) {
         self.streams = streams; self.currentPage = currentPage; self.hasNext = hasNext
     }
 }
 
-struct LiveCoreStreamClient: CoreStreamClient {
+struct LiveCoreStreamClient: _CoreStreamClient {
     let client: HotMicClient
 
     /// Fetches one stream summary by its Core ID.
-    func fetchStream(id: String) async throws -> CoreStreamSummary {
-        CoreStreamSummary(try await client.fetchStream(id: id))
+    func fetchStream(id: String) async throws -> _CoreStreamSummary {
+        _CoreStreamSummary(try await client.fetchStream(id: id))
     }
 
     /// Fetches one stream summary by its Core ID.
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> CoreStreamPage {
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _CoreStreamPage {
         let page = try await client.fetchStreams(matching: query)
-        return CoreStreamPage(streams: page.streams.map(CoreStreamSummary.init),
+        return _CoreStreamPage(streams: page.streams.map(_CoreStreamSummary.init),
                               currentPage: page.pagination.currentPage, hasNext: page.pagination.hasNext)
     }
 }

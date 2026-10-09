@@ -22,7 +22,7 @@ import HotMicPlayer
         case failed
     }
     private var states: [String: ConnectionState] = [:]
-    @ObservationIgnored private let factory: any CoreSessionFactory
+    @ObservationIgnored private let factory: any _CoreSessionFactory
     @ObservationIgnored private var current: HMMediaItem?
     @ObservationIgnored private var next: HMMediaItem?
     @ObservationIgnored private var slots: [String: Slot] = [:]
@@ -41,13 +41,8 @@ import HotMicPlayer
     public convenience init(client: HotMicClient, nextSessionDelay: TimeInterval = 1) {
         self.init(factory: LiveCoreSessionFactory(client: client), nextSessionDelay: nextSessionDelay)
     }
-    /// Creates engagement using an injectable session factory. Access on the main actor.
-    public convenience init(factory: any CoreSessionFactory, nextSessionDelay: TimeInterval = 1) {
-        self.init(factory: factory, nextSessionDelay: nextSessionDelay, retryBaseDelay: 1)
-    }
-    /// Testing-only initializer with an accelerated startup retry interval.
-    @_spi(Testing) public init(factory: any CoreSessionFactory, nextSessionDelay: TimeInterval = 1,
-                               retryBaseDelay: TimeInterval) {
+    package init(factory: any _CoreSessionFactory, nextSessionDelay: TimeInterval = 1,
+                 retryBaseDelay: TimeInterval = 1) {
         self.factory = factory
         self.nextSessionDelay = nextSessionDelay.isFinite ? max(0, nextSessionDelay) : 1
         self.retryBaseDelay = retryBaseDelay.isFinite ? max(0.01, retryBaseDelay) : 1
@@ -273,7 +268,7 @@ import HotMicPlayer
         }
         return false
     }
-    private func consume(_ event: CoreSessionEvent, itemID: String, slot: Slot) {
+    private func consume(_ event: _CoreSessionEvent, itemID: String, slot: Slot) {
         guard !slot.failureHandled else { return }
         switch event {
         case .connection(let state): states[itemID] = state; return
@@ -300,8 +295,8 @@ import HotMicPlayer
         default: break
         }
     }
-    private func receive(_ messages: [CoreChat], in slot: Slot) {
-        let mapped = messages.compactMap { chat -> (CoreChat, HMTimelineEvent)? in
+    private func receive(_ messages: [_CoreChat], in slot: Slot) {
+        let mapped = messages.compactMap { chat -> (_CoreChat, HMTimelineEvent)? in
             slot.timeline.remember(chat)
             guard let event = slot.timeline.event(chat) else { return nil }
             return (chat, event)
@@ -313,10 +308,10 @@ import HotMicPlayer
             for (chat, _) in mapped { engagement.updateReactions(chat.counts, forMessage: chat.id) }
         } else { slot.timeline.append(contentsOf: events) }
     }
-    private func upsert(_ poll: CorePoll, in slot: Slot) {
+    private func upsert(_ poll: _CorePoll, in slot: Slot) {
         slot.timeline.remember(poll)
     }
-    private func applyReaction(_ reaction: CoreMessageReaction, added: Bool, to slot: Slot) {
+    private func applyReaction(_ reaction: _CoreMessageReaction, added: Bool, to slot: Slot) {
         guard let emoji = Self.emoji(reaction.type) else { return }
         let key = ReactionKey(message: reaction.messageID, user: reaction.userID, type: reaction.type)
         guard slot.reactionState[key] != added else { return }
@@ -333,11 +328,11 @@ import HotMicPlayer
             timeline.engagement?.updateReactions(chat.counts, forMessage: chat.id)
         }
     }
-    private func deletion(_ event: CoreSessionEvent, timeline: CoreTimeline) {
+    private func deletion(_ event: _CoreSessionEvent, timeline: CoreTimeline) {
         if timeline.engagement == nil { timeline.pendingDeletions.append(event) }
         else { applyDeletion(event, to: timeline) }
     }
-    private func applyDeletion(_ event: CoreSessionEvent, to timeline: CoreTimeline) {
+    private func applyDeletion(_ event: _CoreSessionEvent, to timeline: CoreTimeline) {
         switch event {
         case .messageDeleted(let id): timeline.engagement?.removeMessage(id: id)
         case .pollDeleted(let id): timeline.engagement?.removePoll(id: id)
@@ -347,18 +342,18 @@ import HotMicPlayer
 }
 
 @MainActor private final class Slot {
-    let session: any CoreSession
+    let session: any _CoreSession
     let timeline: CoreTimeline
     var startTask: Task<Void, Never>?
     var eventTask: Task<Void, Never>?
     var stopTask: Task<Void, Never>?
     var failureHandled = false
-    var queued: [CoreSessionEvent] = []
+    var queued: [_CoreSessionEvent] = []
     var ready = false
     var stopping = false
     var userID = ""
     var reactionState: [ReactionKey: Bool] = [:]
-    init(session: any CoreSession, timeline: CoreTimeline) { self.session = session; self.timeline = timeline }
+    init(session: any _CoreSession, timeline: CoreTimeline) { self.session = session; self.timeline = timeline }
 }
 private struct ReactionKey: Hashable { let message: String; let user: String; let type: String }
 @MainActor private final class WeakTimeline {

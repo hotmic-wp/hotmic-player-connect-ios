@@ -61,4 +61,5 @@ The player’s native `HMPlayerConfiguration.failedItemPolicy` defaults to `.ski
 
 Open `Examples/HotMicExamples.xcodeproj`, scheme `Streams`, for a roughly 40-line entry point with
 an injected fake client by default. Shared support holds credentials, fixtures and optional verification.
-Only public API is imported. `--fake` bypasses credential loading entirely.
+The example imports the optional `HotMicPlayerCoreTesting` product for its fake client; production
+apps do not need this product. Only public API is imported. `--fake` bypasses credential loading entirely.

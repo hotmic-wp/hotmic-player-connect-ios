@@ -1,5 +1,6 @@
 import Foundation
 import HotMicPlayerCore
+import HotMicPlayerCoreTesting
 
 /// Runs only in fake mode. Timers model session batches, connection recovery and moderation.
 @MainActor final class DemoSessions: CoreSessionFactory {
