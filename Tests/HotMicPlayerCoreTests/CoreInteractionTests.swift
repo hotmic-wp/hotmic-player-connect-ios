@@ -1,5 +1,6 @@
 import XCTest
 import HotMicPlayer
+import HotMicCore
 @_spi(Testing) @testable import HotMicPlayerCore
 
 @MainActor private final class Sessions: CoreSessionFactory {
@@ -9,6 +10,10 @@ import HotMicPlayer
     var stopGate: CheckedContinuation<Void, Never>?
     var holdStop = false
     var failStart = false
+    var failures: [String: [HotMicError]] = [:]
+    var missingOrigins: Set<String> = []
+    var heldStopIDs: Set<String> = []
+    var stopGates: [String: CheckedContinuation<Void, Never>] = [:]
     var holdStarts: Set<String> = []
     let origin = Date(timeIntervalSince1970: 1000)
     func makeSession(streamID: String) -> any CoreSession {
@@ -36,14 +41,20 @@ import HotMicPlayer
     func start() async throws -> CoreSessionSnapshot {
         owner.live.insert(ObjectIdentifier(self)); owner.maximum = max(owner.maximum, owner.live.count)
         if owner.failStart { throw URLError(.notConnectedToInternet) }
+        if let error = owner.failures[id]?.first {
+            owner.failures[id]?.removeFirst()
+            continuation.yield(.failed(error)) // Core also throws this error from start.
+            throw error
+        }
         continuation.yield(.connection(.connected))
         if owner.holdStarts.contains(id) { await withCheckedContinuation { startGate = $0 } }
-        return CoreSessionSnapshot(liveDate: owner.origin, duration: 42, userID: "viewer",
+        return CoreSessionSnapshot(liveDate: owner.missingOrigins.contains(id) ? nil : owner.origin, duration: 42, userID: "viewer",
                                    messages: [chat("history", at: 5, counts: ["👍": 2])], polls: [poll()])
     }
     func stop() async {
         guard !stopped else { return }
         if owner.holdStop { await withCheckedContinuation { owner.stopGate = $0 } }
+        if owner.heldStopIDs.contains(id) { await withCheckedContinuation { owner.stopGates[id] = $0 } }
         stopped = true; owner.live.remove(ObjectIdentifier(self)); continuation.finish()
     }
     func sendChat(_ text: String) async throws -> CoreChat {
@@ -81,10 +92,10 @@ import HotMicPlayer
 
     func testTwoSessionsPromotionBackwardSwapAndStopBarrier() async {
         let factory = Sessions()
-        let source = CoreInteractionSource(factory: factory)
+        let source = CoreInteractionSource(factory: factory, nextSessionDelay: 0)
         // Timeline construction is inert, even for HotMic references.
         _ = source.timeline(for: .hotmicStream("unused"))
-        let interactions = CoreInteractionSource(factory: factory)
+        let interactions = CoreInteractionSource(factory: factory, nextSessionDelay: 0)
         let a = HMMediaItem.hotmicStream("a"), b = HMMediaItem.hotmicStream("b"), c = HMMediaItem.hotmicStream("c")
         interactions.didBecomeCurrent(a); interactions.willBecomeNext(b)
         await waitUntil { factory.live.count == 2 }
@@ -120,7 +131,7 @@ import HotMicPlayer
 
     func testSnapshotBatchesActionsDeletionAndEchoReconciliation() async throws {
         let factory = Sessions(), item = HMMediaItem.hotmicStream("one")
-        let source = CoreInteractionSource(factory: factory)
+        let source = CoreInteractionSource(factory: factory, nextSessionDelay: 0)
         let timeline = source.timeline(for: item)
         let engagement = HMEngagement(item: item, timeline: timeline, source: source, mediaClock: { 7 })
         source.engagementDidLoad(engagement); source.didBecomeCurrent(item)
@@ -150,11 +161,14 @@ import HotMicPlayer
         session.continuation.yield(.messageDeleted("batch")); session.continuation.yield(.messageDeleted("server-1"))
         session.continuation.yield(.pollDeleted("poll"))
         await waitUntil { engagement.polls.isEmpty && !engagement.messages(near: 7).contains { ["batch", "server-1"].contains($0.id) } }
+        let beforeEcho = timeline.density.map(\.eventCount)
         session.continuation.yield(.chat(messages: [session.chat("batch", at: 6), session.chat("server-1", at: 7)], reactions: []))
         session.continuation.yield(.poll(session.poll()))
         session.continuation.yield(.connection(.reconnecting(attempt: 2)))
         await waitUntil { source.connectionState(for: item) == .reconnecting(attempt: 2) }
         XCTAssertTrue(engagement.polls.isEmpty)
+        XCTAssertEqual(timeline.density.map(\.eventCount), beforeEcho, "Deleted echoes must not restore raw waveform contributions")
+        XCTAssertFalse(timeline.events(in: 0...42).contains { ["batch", "server-1"].contains($0.id) })
         XCTAssertFalse(engagement.messages(near: 7).contains { ["batch", "server-1"].contains($0.id) })
         session.continuation.yield(.connection(.connected))
         await waitUntil { source.connectionState(for: item) == .connected }
@@ -164,7 +178,7 @@ import HotMicPlayer
 
     func testStartupBufferAndCancelledStartCannotOverwriteNewWindow() async {
         let factory = Sessions()
-        let interactions = CoreInteractionSource(factory: factory)
+        let interactions = CoreInteractionSource(factory: factory, nextSessionDelay: 0)
         let a = HMMediaItem.hotmicStream("a"), b = HMMediaItem.hotmicStream("b")
         factory.holdStarts.insert("a")
         interactions.didBecomeCurrent(a)
@@ -195,14 +209,14 @@ import HotMicPlayer
         XCTAssertLessThanOrEqual(factory.maximum, 2)
     }
 
-    func testMediaOffsetsClampAndUnsupportedItemsStayEmpty() async throws {
+    func testMediaOffsetsDropOutsideWindowAndUnsupportedItemsStayEmpty() async throws {
         let factory = Sessions(), source = CoreInteractionSource(factory: Sessions())
         let timeline = CoreTimeline(streamID: "one", duration: 42, liveDate: factory.origin)
-        XCTAssertEqual(timeline.offset(factory.origin.addingTimeInterval(-10)), 0)
+        XCTAssertNil(timeline.offset(factory.origin.addingTimeInterval(-10)))
         XCTAssertEqual(timeline.offset(factory.origin.addingTimeInterval(12)), 12)
-        XCTAssertEqual(timeline.offset(factory.origin.addingTimeInterval(100)), 42)
+        XCTAssertNil(timeline.offset(factory.origin.addingTimeInterval(100)))
         timeline.retime(liveDate: nil, duration: nil)
-        XCTAssertEqual(timeline.offset(factory.origin), 0, "Unknown stream origin must not invent epoch offsets")
+        XCTAssertNil(timeline.offset(factory.origin), "Missing origin means no replay timing")
         for item in [HMMediaItem.reference("partner", id: "one"), HMMediaItem(id: "hotmic:one", url: URL(string: "https://example.com/one.mp4")!)] {
             XCTAssertEqual(source.capabilities(for: item), .readOnly)
             source.didBecomeCurrent(item)
@@ -218,7 +232,7 @@ import HotMicPlayer
 
     func testPreparationDeletionsBeforeEngagementAndFailureReentry() async {
         let factory = Sessions()
-        let interactions = CoreInteractionSource(factory: factory), item = HMMediaItem.hotmicStream("next")
+        let interactions = CoreInteractionSource(factory: factory, nextSessionDelay: 0), item = HMMediaItem.hotmicStream("next")
         interactions.willBecomeNext(item)
         await waitUntil { factory.sessions["next"] != nil && interactions.connectionState(for: item) == .connected }
         factory.latest("next").continuation.yield(.messageDeleted("history"))
@@ -239,4 +253,109 @@ import HotMicPlayer
         XCTAssertEqual(factory.sessions["next"]?.count, 3)
         await leave(interactions, factory, [item])
     }
+
+    func testBatchDropsOutsideWindowAndMissingOriginWithoutBoundarySpikes() async throws {
+        let factory = Sessions(), item = HMMediaItem.hotmicStream("batch")
+        let source = CoreInteractionSource(factory: factory)
+        let timeline = source.timeline(for: item) as! CoreTimeline
+        let engagement = HMEngagement(item: item, timeline: timeline, source: source)
+        source.engagementDidLoad(engagement); source.didBecomeCurrent(item)
+        await waitUntil { timeline.messages.count == 1 }
+        let session = factory.latest("batch"), before = timeline.rebuildCount
+        let batch = (0..<50).map { session.chat("batch-\($0)", at: 1 + Double($0) / 50) }
+        session.continuation.yield(.chat(messages: batch + [session.chat("pre", at: -1), session.chat("post", at: 43)], reactions: []))
+        for offset in [-1.0, 43.0] {
+            session.continuation.yield(.poll(.init(id: "outside-\(offset)", question: "Outside", createdAt: factory.origin.addingTimeInterval(offset), options: [])))
+        }
+        session.continuation.yield(.connection(.reconnecting(attempt: 50)))
+        await waitUntil { source.connectionState(for: item) == .reconnecting(attempt: 50) }
+        XCTAssertEqual(timeline.rebuildCount - before, 1, "One sort and waveform rebuild for a 50-message batch, including engagement.receive")
+        XCTAssertEqual(timeline.events(in: 0...42).count, 51)
+        XCTAssertEqual(engagement.messages(near: 42, lookback: 42, limit: 100).count, 51)
+        XCTAssertEqual(engagement.polls.map(\.id), ["poll"])
+        XCTAssertEqual(timeline.density.first?.eventCount, 0)
+        XCTAssertEqual(timeline.density.last?.eventCount, 0)
+        XCTAssertEqual(timeline.offset(factory.origin), 0)
+        XCTAssertEqual(timeline.offset(factory.origin.addingTimeInterval(42)), 42)
+        let after = timeline.rebuildCount
+        session.continuation.yield(.stream(liveDate: factory.origin, duration: 42))
+        session.continuation.yield(.connection(.connected))
+        await waitUntil { source.connectionState(for: item) == .connected }
+        XCTAssertEqual(timeline.rebuildCount, after, "Unchanged stream update must not re-receive history")
+        await leave(source, factory, [item])
+
+        let missing = HMMediaItem.hotmicStream("missing")
+        factory.missingOrigins.insert("missing")
+        let empty = HMEngagement(item: missing, timeline: source.timeline(for: missing), source: source)
+        source.engagementDidLoad(empty); source.didBecomeCurrent(missing)
+        await waitUntil { source.connectionState(for: missing) == .connected }
+        XCTAssertTrue(empty.messages(near: 42, lookback: 42).isEmpty)
+        XCTAssertTrue(empty.polls.isEmpty)
+        XCTAssertTrue(empty.density.allSatisfy { $0.eventCount == 0 })
+        try await empty.sendChat("Own send has a playback clock", at: 7)
+        XCTAssertEqual(empty.messages(near: 7).first?.offset, 7)
+        await leave(source, factory, [missing])
+    }
+
+    func testNextDebounceAndConcurrentStopsPreserveCapacity() async {
+        let factory = Sessions()
+        let source = CoreInteractionSource(factory: factory, nextSessionDelay: 0.15)
+        let a = HMMediaItem.hotmicStream("a"), b = HMMediaItem.hotmicStream("b")
+        source.didBecomeCurrent(a); source.willBecomeNext(b)
+        await waitUntil { factory.sessions["a"] != nil }
+        for index in 0..<5 {
+            let item = HMMediaItem.hotmicStream("binge-\(index)")
+            source.didLeave(index == 0 ? a : .hotmicStream("binge-\(index - 1)"))
+            source.didBecomeCurrent(item); source.willBecomeNext(.hotmicStream("unused-next-\(index)"))
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        XCTAssertNil(factory.sessions["b"])
+        XCTAssertTrue(factory.sessions.keys.allSatisfy { !$0.hasPrefix("unused-next") })
+        await waitUntil { factory.sessions["unused-next-4"] != nil }
+        await leave(source, factory, [.hotmicStream("binge-4"), .hotmicStream("unused-next-4")])
+
+        let immediate = CoreInteractionSource(factory: factory, nextSessionDelay: 0)
+        immediate.didBecomeCurrent(a); immediate.willBecomeNext(b)
+        await waitUntil { factory.live.count == 2 }
+        factory.heldStopIDs.insert("a")
+        let c = HMMediaItem.hotmicStream("c"), d = HMMediaItem.hotmicStream("d")
+        immediate.didLeave(a); immediate.didLeave(b)
+        immediate.didBecomeCurrent(c); immediate.willBecomeNext(d)
+        await waitUntil { factory.stopGates["a"] != nil && factory.sessions["c"] != nil }
+        XCTAssertFalse(factory.latest("a").stopped)
+        XCTAssertTrue(factory.latest("b").stopped)
+        XCTAssertNil(factory.sessions["d"], "Stopping A plus current C still occupies both slots")
+        XCTAssertEqual(factory.live.count, 2)
+        factory.heldStopIDs.remove("a"); factory.stopGates.removeValue(forKey: "a")?.resume()
+        await waitUntil { factory.sessions["d"] != nil }
+        XCTAssertEqual(factory.maximum, 2)
+        await leave(immediate, factory, [c, d])
+    }
+
+    func testTransientStartBackoffWhileCurrentAndRetryCancellation() async {
+        let factory = Sessions(), item = HMMediaItem.hotmicStream("retry")
+        factory.failures["retry"] = [.transport(description: "fake"), .server(statusCode: 503, message: nil)]
+        let source = CoreInteractionSource(factory: factory, retryBaseDelay: 0.05)
+        source.didBecomeCurrent(item)
+        await waitUntil { factory.sessions["retry"]?.count == 1 && factory.live.isEmpty }
+        try? await Task.sleep(for: .milliseconds(15))
+        XCTAssertEqual(factory.sessions["retry"]?.count, 1, "No immediate retry spin")
+        await waitUntil { factory.sessions["retry"]?.count == 3 && source.connectionState(for: item) == .connected }
+        XCTAssertTrue(factory.sessions["retry"]!.dropLast().allSatisfy(\.stopped))
+        await leave(source, factory, [item])
+        factory.failures["retry"] = [.transport(description: "fake")]
+        source.didBecomeCurrent(item)
+        await waitUntil { factory.sessions["retry"]?.count == 4 && factory.live.isEmpty }
+        source.didLeave(item)
+        try? await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(factory.sessions["retry"]?.count, 4, "Leaving cancels pending backoff")
+        factory.failures["retry"] = [.unauthorized]
+        source.didBecomeCurrent(item)
+        await waitUntil { factory.sessions["retry"]?.count == 5 && factory.live.isEmpty }
+        try? await Task.sleep(for: .milliseconds(80))
+        XCTAssertEqual(factory.sessions["retry"]?.count, 5, "Credential failures must not retry")
+        await leave(source, factory, [item])
+        XCTAssertLessThanOrEqual(factory.maximum, 2)
+    }
+
 }

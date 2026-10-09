@@ -88,7 +88,7 @@ import HotMicCore
 
 @_spi(Testing) public enum CoreSessionEvent: Sendable {
     case connection(CoreInteractionSource.ConnectionState)
-    case failed
+    case failed(HotMicError)
     case stream(liveDate: Date?, duration: TimeInterval?)
     case ended, deleted
     case chat(messages: [CoreChat], reactions: [CoreMessageReaction])
@@ -143,7 +143,7 @@ import HotMicCore
         case .connectionChanged(.connected): return .connection(.connected)
         case .connectionChanged(.reconnecting(let attempt)): return .connection(.reconnecting(attempt: attempt))
         case .connectionChanged(.disconnected): return .connection(.disconnected)
-        case .stateChanged(.failed): return .failed
+        case .stateChanged(.failed(let error)): return .failed(error)
         case .streamUpdated(let stream): return .stream(liveDate: stream.liveDate, duration: stream.duration)
         case .streamEnded: return .ended
         case .streamDeleted: return .deleted

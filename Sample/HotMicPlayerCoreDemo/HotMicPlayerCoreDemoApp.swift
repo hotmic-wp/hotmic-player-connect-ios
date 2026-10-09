@@ -85,6 +85,68 @@ final class DemoModel {
         player.play()
     }
 
+    /// Opt-in fake-only app flow, using the same player/engagement actions as the overlay.
+    func runReviewScript() async {
+        guard isFake, ProcessInfo.processInfo.arguments.contains("--review-script") else { return }
+        do {
+            record("reviewBegin", [:])
+            // Keep the short MP4 current through the retry, 50-message batch and moderation.
+            player.pause()
+            try await Task.sleep(for: .seconds(4))
+            guard let item = player.currentItem else { return }
+            let engagement = player.engagement(for: item)
+            reviewProjection("batchAndBoundaries", item: item)
+            try await engagement.sendChat("Review confirmed send", at: 2)
+            try await engagement.react("👍", toMessage: "sample-1-welcome")
+            try await engagement.vote(pollID: "sample-1-poll", optionID: "yes")
+            player.seek(to: 2)
+            reviewProjection("actions", item: item)
+            try await Task.sleep(for: .seconds(4))
+            record("reviewConnection", ["state": String(describing: interactions.connectionState(for: item))])
+            try await Task.sleep(for: .seconds(6))
+            reviewProjection("afterDeletions", item: item)
+
+            // Two obsolete sessions: next's fast stop must release capacity before current's slow stop.
+            fakeSessions?.slowStops.insert("sample-1")
+            player.playlistSource = nil
+            record("fastBingeBegin", [:])
+            player.replaceAll(["sample-3", "sample-4", "sample-5", "sample-6", "sample-7"].map(HMMediaItem.hotmicStream))
+            for _ in 0..<3 {
+                try await Task.sleep(for: .milliseconds(150))
+                player.next()
+            }
+            player.pause()
+            try await Task.sleep(for: .seconds(4))
+            record("fastBingeEnd", ["maximumLive": String(fakeSessions?.maximumLive ?? 0)])
+            // Sample-7 intentionally has no liveDate: history/polls must stay empty, own sends work.
+            player.next(); player.pause()
+            try await Task.sleep(for: .seconds(3))
+            guard let missing = player.currentItem else { return }
+            reviewProjection("missingOrigin", item: missing)
+            try await player.engagement(for: missing).sendChat("Own send without origin", at: 2)
+            player.seek(to: 2)
+            reviewProjection("missingOriginOwnSend", item: missing)
+            record("reviewComplete", ["maximumLive": String(fakeSessions?.maximumLive ?? 0)])
+        } catch {
+            // Deliberately no raw errors or credentials in fake evidence.
+            record("reviewFailed", [:])
+        }
+    }
+
+    private func reviewProjection(_ stage: String, item: HMMediaItem) {
+        let engagement = player.engagement(for: item)
+        let messages = engagement.messages(near: engagement.duration, lookback: engagement.duration, limit: 100)
+        record("reviewProjection", ["stage": stage, "id": item.id,
+                                    "messages": String(messages.count),
+                                    "outsideMessages": String(messages.filter { $0.id.contains("pre-live") || $0.id.contains("post-vod") }.count),
+                                    "polls": engagement.polls.map(\.id).joined(separator: ","),
+                                    "endBucket": String(engagement.density.last?.eventCount ?? 0),
+                                    "waveformEvents": String(engagement.density.reduce(0) { $0 + $1.eventCount }),
+                                    "own": messages.filter(\.isOwn).map { "\($0.id)@\($0.offset)" }.joined(separator: ","),
+                                    "welcomeLikes": String(messages.first { $0.id.hasSuffix("-welcome") }?.reactions["👍"] ?? 0),
+                                    "vote": engagement.polls.first?.viewerVote ?? "none"])
+    }
+
     func visibility(_ visible: Bool) { player.isFeedVisible = visible }
 
     func stop() {
@@ -138,7 +200,7 @@ struct DemoView: View {
                 Button("Next") { model.player.next() }
             }.buttonStyle(.bordered)
         }
-        .task { await model.feed() }
+        .task { await model.feed(); await model.runReviewScript() }
         .onChange(of: scenePhase) { _, phase in model.visibility(phase == .active) }
         .onDisappear { model.stop() }
     }

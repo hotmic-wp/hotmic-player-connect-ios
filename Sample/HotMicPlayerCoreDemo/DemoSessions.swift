@@ -5,6 +5,13 @@ import Foundation
 @MainActor final class DemoSessions: CoreSessionFactory {
     private(set) var live: Set<String> = []
     private(set) var maximumLive = 0
+    var slowStops: Set<String> = []
+    private var attempts: [String: Int] = [:]
+    let reviewScript = ProcessInfo.processInfo.arguments.contains("--review-script")
+    func shouldFail(_ id: String) -> Bool {
+        attempts[id, default: 0] += 1
+        return reviewScript && id == "sample-1" && attempts[id] == 1
+    }
     func makeSession(streamID: String) -> any CoreSession { DemoSession(id: streamID, owner: self) }
     func opened(_ id: String) {
         live.insert(id); maximumLive = max(maximumLive, live.count)
@@ -38,35 +45,57 @@ import Foundation
     func start() async throws -> CoreSessionSnapshot {
         guard !stopped, !active else { throw CancellationError() }
         active = true; owner?.opened(id)
+        if owner?.shouldFail(id) == true {
+            owner?.record("transientStartFailure", ["id": id])
+            throw URLError(.notConnectedToInternet)
+        }
         continuation.yield(.connection(.connected))
         script = Task { @MainActor [weak self] in
             do {
                 try await Task.sleep(for: .seconds(1))
                 guard let self, !self.stopped else { return }
-                self.continuation.yield(.chat(messages: [self.chat("batch", "Sam", "This arrived in a chat batch", at: 0.5)], reactions: []))
-                self.owner?.record("chatBatch", ["id": self.id])
+                let batch = [self.chat("batch", "Sam", "This arrived in a chat batch", at: 0.5)] + (1..<50).map {
+                    self.chat("burst-\($0)", "Replay viewer", "Batch message \($0)", at: 0.5 + Double($0) / 50)
+                }
+                self.continuation.yield(.chat(messages: batch, reactions: []))
+                self.continuation.yield(.chat(messages: [self.chat("pre-live", "Before", "Before liveDate", at: -20),
+                                                        self.chat("post-vod", "After", "After recording", at: 3600)], reactions: []))
+                self.owner?.record("chatBatch", ["id": self.id, "batchSize": "50", "outsideWindow": "2"])
                 try await Task.sleep(for: .seconds(1))
                 self.continuation.yield(.poll(self.poll()))
-                self.owner?.record("pollCreated", ["id": self.id])
-                try await Task.sleep(for: .seconds(8))
+                for (suffix, offset) in [("pre-live", -20.0), ("post-vod", 3600.0)] {
+                    self.continuation.yield(.poll(CorePoll(id: "\(self.id)-\(suffix)", question: "Outside recording",
+                                                          createdAt: self.origin.addingTimeInterval(offset), options: [])))
+                }
+                self.owner?.record("pollCreated", ["id": self.id, "outsideWindow": "2"])
+                try await Task.sleep(for: .seconds(4))
                 self.continuation.yield(.connection(.reconnecting(attempt: 1)))
                 self.owner?.record("reconnecting", ["id": self.id])
                 try await Task.sleep(for: .seconds(3))
                 self.continuation.yield(.connection(.connected))
                 self.owner?.record("connected", ["id": self.id])
-                try await Task.sleep(for: .seconds(17))
+                try await Task.sleep(for: .seconds(3))
                 self.continuation.yield(.messageDeleted("\(self.id)-batch"))
                 self.continuation.yield(.pollDeleted("\(self.id)-poll"))
                 self.owner?.record("scriptDeletions", ["id": self.id])
+                try await Task.sleep(for: .milliseconds(200))
+                self.continuation.yield(.chat(messages: [self.chat("batch", "Sam", "Deleted late echo", at: 0.5)], reactions: []))
+                self.continuation.yield(.poll(self.poll()))
+                self.owner?.record("lateModeratedEcho", ["id": self.id])
             } catch { }
         }
-        return CoreSessionSnapshot(liveDate: origin, duration: id == "sample-6" ? 1800 : 5.05,
+        return CoreSessionSnapshot(liveDate: id == "sample-7" ? nil : origin, duration: id == "sample-6" ? 1800 : 5.05,
                                    userID: "demo-viewer", messages: [chat("welcome", "Mara", "Welcome to \(id)", at: 0)], polls: [])
     }
     func stop() async {
         guard !stopped else { return }
         stopped = true; script?.cancel(); continuation.finish()
-        if active { active = false; owner?.closed(id) }
+        if active {
+            owner?.record("sessionStopBegin", ["id": id])
+            // Stopping remains live until the asynchronous cleanup finishes.
+            try? await Task.sleep(for: .seconds(owner?.slowStops.contains(id) == true ? 3 : 0.1))
+            active = false; owner?.closed(id)
+        }
     }
     func sendChat(_ text: String) async throws -> CoreChat {
         guard active, !stopped else { throw CancellationError() }

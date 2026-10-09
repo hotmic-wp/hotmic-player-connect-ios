@@ -39,7 +39,9 @@ actor DemoEvidence {
     func record(_ event: String, _ fields: [String: String] = [:]) {
         var row = fields
         row["event"] = event
-        row["time"] = ISO8601DateFormatter().string(from: Date())
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        row["time"] = formatter.string(from: Date())
         guard let data = try? JSONSerialization.data(withJSONObject: row, options: [.sortedKeys]),
               let documents = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else { return }
         let url = documents.appendingPathComponent("demo-evidence.jsonl")

@@ -17,21 +17,36 @@ import HotMicPlayer
     @ObservationIgnored private var timelines: [String: WeakTimeline] = [:]
     @ObservationIgnored private var reconciliation: Task<Void, Never>?
     @ObservationIgnored private var failed: Set<String> = []
+    @ObservationIgnored private var currentSince: ContinuousClock.Instant?
+    @ObservationIgnored private var wake: Task<Void, Never>?
+    @ObservationIgnored private var retryAt: [String: ContinuousClock.Instant] = [:]
+    @ObservationIgnored private var attempts: [String: Int] = [:]
+    @ObservationIgnored private let retryBaseDelay: TimeInterval
+    /// Current-item dwell before opening next. Zero opts into immediate preparation.
+    public let nextSessionDelay: TimeInterval
 
-    public convenience init(client: HotMicClient) { self.init(factory: LiveCoreSessionFactory(client: client)) }
-    @_spi(Testing) public init(factory: any CoreSessionFactory) { self.factory = factory }
+    public convenience init(client: HotMicClient, nextSessionDelay: TimeInterval = 1) {
+        self.init(factory: LiveCoreSessionFactory(client: client), nextSessionDelay: nextSessionDelay)
+    }
+    @_spi(Testing) public init(factory: any CoreSessionFactory, nextSessionDelay: TimeInterval = 1,
+                               retryBaseDelay: TimeInterval = 1) {
+        self.factory = factory
+        self.nextSessionDelay = nextSessionDelay.isFinite ? max(0, nextSessionDelay) : 1
+        self.retryBaseDelay = retryBaseDelay.isFinite ? max(0.01, retryBaseDelay) : 1
+    }
 
     deinit {
-        reconciliation?.cancel()
+        reconciliation?.cancel(); wake?.cancel()
         for slot in slots.values {
             Task { @MainActor in
+                guard !slot.stopping else { return }
                 slot.startTask?.cancel(); slot.eventTask?.cancel()
                 await slot.session.stop()
             }
         }
     }
 
-    /// Connection failures affect engagement only. Re-entering an item retries with a new session.
+    /// Connection failures affect engagement only. Transient startup failures retry while current.
     public func connectionState(for item: HMMediaItem) -> ConnectionState { states[item.id] ?? .idle }
     public func capabilities(for item: HMMediaItem) -> HMEngagementCapabilities {
         streamID(for: item) == nil ? .readOnly : [.sendChat, .reactToMessage, .vote]
@@ -49,14 +64,17 @@ import HotMicPlayer
     }
     public func willBecomeNext(_ item: HMMediaItem) { next = item; scheduleReconciliation() }
     public func didBecomeCurrent(_ item: HMMediaItem) {
+        if current?.id != item.id || current.flatMap({ streamID(for: $0) }) != streamID(for: item) {
+            currentSince = .now
+        }
         current = item
         if next?.id == item.id { next = nil }
         scheduleReconciliation()
     }
     public func didLeave(_ item: HMMediaItem) {
-        if current?.id == item.id { current = nil }
+        if current?.id == item.id { current = nil; currentSince = nil }
         if next?.id == item.id { next = nil }
-        failed.remove(item.id)
+        failed.remove(item.id); retryAt[item.id] = nil; attempts[item.id] = nil
         scheduleReconciliation()
     }
 
@@ -72,7 +90,7 @@ import HotMicPlayer
         // Keep a confirmed send at the viewer's playback position, not today's wall time on an old VOD.
         slot.timeline.ownOffsets[confirmed.id] = slot.timeline.clamp(message.offset)
         slot.timeline.messages[confirmed.id] = confirmed
-        let event = slot.timeline.event(confirmed)
+        guard let event = slot.timeline.event(confirmed) else { return nil }
         slot.timeline.append(event)
         return event
     }
@@ -116,70 +134,118 @@ import HotMicPlayer
         guard reconciliation == nil else { return }
         // Coalesce synchronous hooks (including a backward swipe's current/next role swap).
         reconciliation = Task { @MainActor [weak self] in
-            await self?.reconcile()
+            self?.reconciliation = nil
+            self?.reconcile()
         }
     }
-    private func reconcile() async {
-        while !Task.isCancelled {
-            let wanted = [current, next].compactMap { $0 }.filter { streamID(for: $0) != nil && !failed.contains($0.id) }
-            if let obsolete = slots.first(where: { entry in
-                !wanted.contains { $0.id == entry.key && streamID(for: $0) == entry.value.timeline.streamID }
-            }) {
-                let slot = obsolete.value
-                slot.stopping = true; slot.startTask?.cancel(); slot.eventTask?.cancel()
-                // Count this slot until Core's async cleanup has completed, before opening any replacement.
-                await slot.session.stop()
-                slots[obsolete.key] = nil
-                if !failed.contains(obsolete.key) { states[obsolete.key] = nil }
-                continue // Roles may have changed while stop suspended.
-            }
-            for item in wanted where slots[item.id] == nil {
-                guard slots.count < 2 else { break }
-                let timeline = store(for: item)
-                guard let streamID = timeline.streamID else { continue }
-                let slot = Slot(session: factory.makeSession(streamID: streamID), timeline: timeline)
-                slots[item.id] = slot; states[item.id] = .starting
-                let events = slot.session.events // subscribe BEFORE start
-                slot.eventTask = Task { @MainActor [weak self, weak slot] in
-                    for await event in events {
-                        guard let self, let slot, !Task.isCancelled, self.slots[item.id] === slot, !slot.stopping else { return }
-                        self.consume(event, itemID: item.id, slot: slot)
-                    }
-                }
-                let session = slot.session
-                slot.startTask = Task { @MainActor [weak self, weak slot] in
-                    do {
-                        let snapshot = try await session.start()
-                        guard let self, let slot, !Task.isCancelled, self.slots[item.id] === slot, !slot.stopping else { return }
-                        slot.userID = snapshot.userID
-                        slot.timeline.retime(liveDate: snapshot.liveDate, duration: snapshot.duration)
-                        snapshot.messages.forEach { self.receive($0, in: slot) }
-                        snapshot.polls.forEach { self.upsert($0, in: slot) }
-                        slot.ready = true
-                        let queued = slot.queued; slot.queued.removeAll()
-                        for event in queued { self.consume(event, itemID: item.id, slot: slot) }
-                    } catch {
-                        guard let self, let slot, !slot.stopping, self.slots[item.id] === slot else { return }
-                        self.fail(item.id)
-                    }
-                }
-            }
-            break
+    private func reconcile() {
+        wake?.cancel(); wake = nil
+        let now = ContinuousClock.now
+        let nextDue = currentSince?.advanced(by: .seconds(nextSessionDelay))
+        let prepareNext = nextSessionDelay == 0 || nextDue.map { now >= $0 } == true
+        let candidates = [current, prepareNext ? next : nil].compactMap { $0 }
+        let wanted = candidates.filter { item in
+            guard streamID(for: item) != nil, !failed.contains(item.id) else { return false }
+            guard let due = retryAt[item.id] else { return true }
+            return current?.id == item.id && now >= due
         }
-        reconciliation = nil
+        for (id, slot) in slots where !slot.stopping {
+            // A prepared next survives promotion and role swaps; a changed next is obsolete.
+            let retained = [current, next].compactMap { $0 }.contains {
+                $0.id == id && streamID(for: $0) == slot.timeline.streamID
+            }
+            if !retained || failed.contains(id) || retryAt[id] != nil {
+                stop(slot, id: id)
+            }
+        }
+        for item in wanted where slots[item.id] == nil {
+            // Stopping sessions still occupy capacity. Every stop runs independently.
+            guard slots.count < 2 else { break }
+            let timeline = store(for: item)
+            guard let streamID = timeline.streamID else { continue }
+            retryAt[item.id] = nil
+            let slot = Slot(session: factory.makeSession(streamID: streamID), timeline: timeline)
+            slots[item.id] = slot; states[item.id] = .starting
+            let events = slot.session.events // subscribe BEFORE start
+            slot.eventTask = Task { @MainActor [weak self, weak slot] in
+                for await event in events {
+                    guard let self, let slot, !Task.isCancelled, self.slots[item.id] === slot, !slot.stopping else { return }
+                    self.consume(event, itemID: item.id, slot: slot)
+                }
+            }
+            let session = slot.session
+            slot.startTask = Task { @MainActor [weak self, weak slot] in
+                do {
+                    let snapshot = try await session.start()
+                    guard let self, let slot, !Task.isCancelled, self.slots[item.id] === slot, !slot.stopping, !slot.failureHandled else { return }
+                    slot.userID = snapshot.userID
+                    slot.timeline.retime(liveDate: snapshot.liveDate, duration: snapshot.duration)
+                    self.receive(snapshot.messages, in: slot)
+                    snapshot.polls.forEach { self.upsert($0, in: slot) }
+                    slot.ready = true
+                    self.attempts[item.id] = nil
+                    let queued = slot.queued; slot.queued.removeAll()
+                    for event in queued { self.consume(event, itemID: item.id, slot: slot) }
+                } catch {
+                    guard let self, let slot, !slot.stopping, self.slots[item.id] === slot else { return }
+                    self.fail(item.id, slot: slot, error: error)
+                }
+            }
+        }
+        var deadlines: [ContinuousClock.Instant] = []
+        if next != nil, !prepareNext, let nextDue { deadlines.append(nextDue) }
+        if let current, let due = retryAt[current.id], due > now { deadlines.append(due) }
+        if let due = deadlines.min() {
+            let delay = now.duration(to: due)
+            wake = Task { @MainActor [weak self] in
+                do { try await Task.sleep(for: delay) } catch { return }
+                self?.scheduleReconciliation()
+            }
+        }
         timelines = timelines.filter { $0.value.value != nil }
         let retained = Set([current?.id, next?.id].compactMap { $0 }).union(slots.keys)
         states = states.filter { retained.contains($0.key) }
     }
-    private func fail(_ id: String) {
-        slots[id]?.ready = false
-        failed.insert(id); states[id] = .failed
+    private func stop(_ slot: Slot, id: String) {
+        slot.stopping = true; slot.startTask?.cancel(); slot.eventTask?.cancel()
+        slot.stopTask = Task { @MainActor [weak self] in
+            await slot.session.stop()
+            guard let self, self.slots[id] === slot else { return }
+            self.slots[id] = nil
+            if self.current?.id != id && self.next?.id != id { self.states[id] = nil }
+            self.scheduleReconciliation()
+        }
+    }
+    private func fail(_ id: String, slot: Slot, error: Error) {
+        guard !slot.failureHandled else { return }
+        slot.failureHandled = true; slot.ready = false; states[id] = .failed
+        if Self.isTransient(error) {
+            let attempt = attempts[id, default: 0]
+            attempts[id] = min(attempt + 1, 6)
+            retryAt[id] = .now.advanced(by: .seconds(min(30, retryBaseDelay * pow(2, Double(attempt)))))
+        } else { failed.insert(id) }
         scheduleReconciliation()
     }
+    private static func isTransient(_ error: Error) -> Bool {
+        if let error = error as? HotMicError {
+            switch error {
+            case .transport: return true
+            case .server(let code, _): return code == 429 || (500...599).contains(code)
+            default: return false
+            }
+        }
+        if let error = error as? URLError {
+            return [.timedOut, .cannotFindHost, .cannotConnectToHost, .networkConnectionLost,
+                    .dnsLookupFailed, .notConnectedToInternet, .internationalRoamingOff,
+                    .callIsActive, .dataNotAllowed].contains(error.code)
+        }
+        return false
+    }
     private func consume(_ event: CoreSessionEvent, itemID: String, slot: Slot) {
+        guard !slot.failureHandled else { return }
         switch event {
         case .connection(let state): states[itemID] = state; return
-        case .failed: fail(itemID); return
+        case .failed(let error): fail(itemID, slot: slot, error: error); return
         case .deleted, .ended:
             failed.insert(itemID); states[itemID] = .disconnected; scheduleReconciliation(); return
         default: break
@@ -187,7 +253,7 @@ import HotMicPlayer
         guard slot.ready else { slot.queued.append(event); return }
         switch event {
         case .chat(let messages, let reactions):
-            messages.forEach { receive($0, in: slot) }
+            receive(messages, in: slot)
             reactions.forEach { applyReaction($0, added: true, to: slot) }
         case .messageDeleted(let id):
             slot.timeline.remove(id)
@@ -199,22 +265,27 @@ import HotMicPlayer
             deletion(event, timeline: slot.timeline)
         case .stream(let date, let duration):
             slot.timeline.retime(liveDate: date, duration: duration)
-            for message in slot.timeline.messages.values { slot.timeline.engagement?.receive(slot.timeline.event(message)) }
         default: break
         }
     }
-    private func receive(_ chat: CoreChat, in slot: Slot) {
-        slot.timeline.messages[chat.id] = chat
-        let event = slot.timeline.event(chat)
+    private func receive(_ messages: [CoreChat], in slot: Slot) {
+        let mapped = messages.compactMap { chat -> (CoreChat, HMTimelineEvent)? in
+            guard let event = slot.timeline.event(chat) else { return nil }
+            slot.timeline.messages[chat.id] = chat
+            return (chat, event)
+        }
+        // One sort/waveform rebuild, with the player's moderation guard before each append.
+        let events = mapped.map { $0.1 }
         if let engagement = slot.timeline.engagement {
-            engagement.receive(event)
-            engagement.updateReactions(chat.counts, forMessage: chat.id)
-        } else { slot.timeline.append(event) }
+            slot.timeline.append(contentsOf: events) { engagement.receive($0) }
+            for (chat, _) in mapped { engagement.updateReactions(chat.counts, forMessage: chat.id) }
+        } else { slot.timeline.append(contentsOf: events) }
     }
     private func upsert(_ poll: CorePoll, in slot: Slot) {
+        guard let offset = slot.timeline.offset(poll.createdAt) else { return }
         let mapped = HMPoll(id: poll.id, question: poll.question,
                             options: poll.options.map { .init(id: $0.id, text: $0.text, votes: max(0, $0.votes)) },
-                            viewerVote: poll.viewerVote, opensAt: slot.timeline.offset(poll.createdAt), isClosed: poll.closed)
+                            viewerVote: poll.viewerVote, opensAt: offset, isClosed: poll.closed)
         slot.timeline.polls[poll.id] = mapped
         slot.timeline.engagement?.upsertPoll(mapped)
     }
@@ -232,7 +303,6 @@ import HotMicPlayer
         if var chat = timeline.messages[reaction.messageID] {
             chat.counts[emoji] = max(0, (chat.counts[emoji] ?? 0) + (added ? 1 : -1))
             timeline.messages[chat.id] = chat
-            timeline.append(timeline.event(chat))
             timeline.engagement?.updateReactions(chat.counts, forMessage: chat.id)
         }
     }
@@ -254,6 +324,8 @@ import HotMicPlayer
     let timeline: CoreTimeline
     var startTask: Task<Void, Never>?
     var eventTask: Task<Void, Never>?
+    var stopTask: Task<Void, Never>?
+    var failureHandled = false
     var queued: [CoreSessionEvent] = []
     var ready = false
     var stopping = false
