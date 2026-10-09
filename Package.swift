@@ -2,28 +2,28 @@
 import PackageDescription
 
 let package = Package(
-    name: "HotMicPlayerCore",
+    name: "HotMicPlayerConnect",
     platforms: [.iOS(.v17)],
     products: [
-        .library(name: "HotMicPlayerCore", targets: ["HotMicPlayerCore"]),
-        .library(name: "HotMicPlayerCoreTesting", targets: ["HotMicPlayerCoreTesting"])
+        .library(name: "HotMicPlayerConnect", targets: ["HotMicPlayerConnect"]),
+        .library(name: "HotMicPlayerConnectTesting", targets: ["HotMicPlayerConnectTesting"])
     ],
     dependencies: [
         .package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", from: "1.0.0-rc.1"),
         .package(url: "https://github.com/hotmic-wp/hotmic-core-ios", from: "1.0.2")
     ],
     targets: [
-        .target(name: "HotMicPlayerCore", dependencies: [
+        .target(name: "HotMicPlayerConnect", dependencies: [
             .product(name: "HotMicPlayer", package: "hotmic-player-sdk"),
             .product(name: "HotMicCore", package: "hotmic-core-ios")
         ]),
-        .target(name: "HotMicPlayerCoreTesting", dependencies: [
-            "HotMicPlayerCore",
+        .target(name: "HotMicPlayerConnectTesting", dependencies: [
+            "HotMicPlayerConnect",
             .product(name: "HotMicPlayer", package: "hotmic-player-sdk"),
             .product(name: "HotMicCore", package: "hotmic-core-ios")
         ]),
-        .testTarget(name: "HotMicPlayerCoreTests", dependencies: [
-            "HotMicPlayerCore", "HotMicPlayerCoreTesting",
+        .testTarget(name: "HotMicPlayerConnectTests", dependencies: [
+            "HotMicPlayerConnect", "HotMicPlayerConnectTesting",
             .product(name: "HotMicPlayer", package: "hotmic-player-sdk"),
             .product(name: "HotMicCore", package: "hotmic-core-ios")
         ])

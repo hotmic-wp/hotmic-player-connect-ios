@@ -1,7 +1,7 @@
 import SwiftUI
 import HotMicPlayer
 import HotMicPlayerUI
-import HotMicPlayerCore
+import HotMicPlayerConnect
 
 @main struct StreamsAndEngagementApp: App {
     var body: some Scene { WindowGroup { EngagementFeed() } }

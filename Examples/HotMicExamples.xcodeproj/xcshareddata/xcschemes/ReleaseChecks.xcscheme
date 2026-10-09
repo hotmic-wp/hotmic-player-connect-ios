@@ -47,8 +47,8 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "570FACE5CA0D23B9D6A30937"
-               BuildableName = "HotMicPlayerCoreTests.xctest"
-               BlueprintName = "HotMicPlayerCoreTests"
+               BuildableName = "HotMicPlayerConnectTests.xctest"
+               BlueprintName = "HotMicPlayerConnectTests"
                ReferencedContainer = "container:HotMicExamples.xcodeproj">
             </BuildableReference>
          </TestableReference>

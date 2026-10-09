@@ -1,58 +1,58 @@
 import Foundation
 import HotMicCore
-import HotMicPlayerCore
+import HotMicPlayerConnect
 
-public extension CoreItemResolver {
-    /// Creates an offline/test resolver with an injected transport. Import HotMicPlayerCoreTesting.
-    init(client: any CoreStreamClient, cacheCapacity: Int = 32) {
+public extension HotMicItemResolver {
+    /// Creates an offline/test resolver with an injected transport. Import HotMicPlayerConnectTesting.
+    init(client: any HotMicStreamClient, cacheCapacity: Int = 32) {
         self.init(client: StreamClientBridge(base: client), cacheCapacity: cacheCapacity)
     }
 }
 
-public extension CorePlaylistSource {
+public extension HotMicPlaylistSource {
     /// Creates an offline/test playlist with an injected transport. The query is preserved.
-    init(client: any CoreStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
+    init(client: any HotMicStreamClient, query: HotMicStreamQuery = HotMicStreamQuery(
         includesLive: false, includesScheduled: false, includesVOD: true
     )) {
         self.init(client: StreamClientBridge(base: client), query: query)
     }
 }
 
-public extension CoreInteractionSource {
+public extension HotMicInteractionSource {
     /// Creates offline/test engagement. Access on the main actor; retryBaseDelay can accelerate tests.
-    convenience init(factory: any CoreSessionFactory, nextSessionDelay: TimeInterval = 1,
+    convenience init(factory: any HotMicSessionFactory, nextSessionDelay: TimeInterval = 1,
                      retryBaseDelay: TimeInterval = 1) {
         self.init(factory: SessionFactoryBridge(base: factory), nextSessionDelay: nextSessionDelay,
                   retryBaseDelay: retryBaseDelay)
     }
 }
 
-private struct StreamClientBridge: _CoreStreamClient {
-    let base: any CoreStreamClient
-    func fetchStream(id: String) async throws -> _CoreStreamSummary {
+private struct StreamClientBridge: _HotMicStreamClient {
+    let base: any HotMicStreamClient
+    func fetchStream(id: String) async throws -> _HotMicStreamSummary {
         try await base.fetchStream(id: id).runtimeValue
     }
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _CoreStreamPage {
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _HotMicStreamPage {
         let page = try await base.fetchStreams(matching: query)
-        return _CoreStreamPage(streams: page.streams.map(\.runtimeValue), currentPage: page.currentPage, hasNext: page.hasNext)
+        return _HotMicStreamPage(streams: page.streams.map(\.runtimeValue), currentPage: page.currentPage, hasNext: page.hasNext)
     }
 }
 
-@MainActor private struct SessionFactoryBridge: _CoreSessionFactory {
-    let base: any CoreSessionFactory
-    func makeSession(streamID: String) -> any _CoreSession {
+@MainActor private struct SessionFactoryBridge: _HotMicSessionFactory {
+    let base: any HotMicSessionFactory
+    func makeSession(streamID: String) -> any _HotMicSession {
         SessionBridge(base: base.makeSession(streamID: streamID))
     }
 }
 
-@MainActor private final class SessionBridge: _CoreSession {
-    let base: any CoreSession
-    let events: AsyncStream<_CoreSessionEvent>
+@MainActor private final class SessionBridge: _HotMicSession {
+    let base: any HotMicSession
+    let events: AsyncStream<_HotMicSessionEvent>
     private let forwarding: Task<Void, Never>
-    init(base: any CoreSession) {
+    init(base: any HotMicSession) {
         self.base = base
         let incoming = base.events
-        let pair = AsyncStream<_CoreSessionEvent>.makeStream()
+        let pair = AsyncStream<_HotMicSessionEvent>.makeStream()
         events = pair.stream
         forwarding = Task { @MainActor in
             for await event in incoming {
@@ -63,40 +63,40 @@ private struct StreamClientBridge: _CoreStreamClient {
         }
     }
     deinit { forwarding.cancel() }
-    func start() async throws -> _CoreSessionSnapshot { try await base.start().runtimeValue }
+    func start() async throws -> _HotMicSessionSnapshot { try await base.start().runtimeValue }
     func stop() async { await base.stop(); forwarding.cancel() }
-    func sendChat(_ text: String) async throws -> _CoreChat { try await base.sendChat(text).runtimeValue }
-    func addReaction(_ type: String, to messageID: String) async throws -> _CoreMessageReaction {
+    func sendChat(_ text: String) async throws -> _HotMicChat { try await base.sendChat(text).runtimeValue }
+    func addReaction(_ type: String, to messageID: String) async throws -> _HotMicMessageReaction {
         try await base.addReaction(type, to: messageID).runtimeValue
     }
     func vote(pollID: String, optionID: String) async throws { try await base.vote(pollID: pollID, optionID: optionID) }
 }
 
-extension CoreStreamSummary {
-    var runtimeValue: _CoreStreamSummary {
+extension HotMicFixtureStreamSummary {
+    var runtimeValue: _HotMicStreamSummary {
         .init(id: id, isVOD: isVOD, vodURL: vodURL, thumbnail: thumbnail, title: title, duration: duration)
     }
 }
-extension CoreChat {
-    var runtimeValue: _CoreChat { .init(id: id, author: author, text: text, createdAt: createdAt, avatar: avatar, counts: counts) }
+extension HotMicChat {
+    var runtimeValue: _HotMicChat { .init(id: id, author: author, text: text, createdAt: createdAt, avatar: avatar, counts: counts) }
 }
-extension CoreMessageReaction {
-    var runtimeValue: _CoreMessageReaction { .init(messageID: messageID, userID: userID, type: type) }
+extension HotMicMessageReaction {
+    var runtimeValue: _HotMicMessageReaction { .init(messageID: messageID, userID: userID, type: type) }
 }
-extension CorePoll {
-    var runtimeValue: _CorePoll {
+extension HotMicFixturePoll {
+    var runtimeValue: _HotMicPoll {
         .init(id: id, question: question, createdAt: createdAt, closed: closed, viewerVote: viewerVote,
               options: options.map { .init(id: $0.id, text: $0.text, votes: $0.votes) })
     }
 }
-extension CoreSessionSnapshot {
-    var runtimeValue: _CoreSessionSnapshot {
+extension HotMicSessionSnapshot {
+    var runtimeValue: _HotMicSessionSnapshot {
         .init(liveDate: liveDate, duration: duration, userID: userID,
               messages: messages.map(\.runtimeValue), polls: polls.map(\.runtimeValue))
     }
 }
-extension CoreSessionEvent {
-    var runtimeValue: _CoreSessionEvent {
+extension HotMicSessionEvent {
+    var runtimeValue: _HotMicSessionEvent {
         switch self {
         case .connection(let state): return .connection(state)
         case .failed(let error): return .failed(error)

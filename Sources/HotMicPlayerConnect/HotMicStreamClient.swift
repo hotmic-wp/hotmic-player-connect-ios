@@ -3,15 +3,15 @@ import HotMicCore
 import HotMicPlayer
 
 /// Injectable stream transport. Implement with a Sendable value or actor; production uses HotMicClient.
-package protocol _CoreStreamClient: Sendable {
+package protocol _HotMicStreamClient: Sendable {
     /// Fetches one stream summary by its Core ID.
-    func fetchStream(id: String) async throws -> _CoreStreamSummary
+    func fetchStream(id: String) async throws -> _HotMicStreamSummary
     /// Fetches one stream summary by its Core ID.
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _CoreStreamPage
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _HotMicStreamPage
 }
 
 /// A transport-independent stream summary. Sendable; mutate only exclusively owned values.
-package struct _CoreStreamSummary: Sendable {
+package struct _HotMicStreamSummary: Sendable {
     /// The Core stream ID.
     package let id: String
     /// Whether the stream is a recorded VOD.
@@ -38,8 +38,8 @@ package struct _CoreStreamSummary: Sendable {
     }
 
     func resolvedItem() throws -> HMResolvedItem {
-        guard isVOD else { throw HotMicPlayerCoreError.notVOD(streamID: id) }
-        guard let vodURL else { throw HotMicPlayerCoreError.missingVODURL(streamID: id) }
+        guard isVOD else { throw HotMicPlayerConnectError.notVOD(streamID: id) }
+        guard let vodURL else { throw HotMicPlayerConnectError.missingVODURL(streamID: id) }
         return HMResolvedItem(url: vodURL, format: .auto, poster: thumbnail, title: title, duration: duration)
     }
 
@@ -52,32 +52,32 @@ package struct _CoreStreamSummary: Sendable {
 }
 
 /// One numbered catalogue page. Sendable across tasks.
-package struct _CoreStreamPage: Sendable {
+package struct _HotMicStreamPage: Sendable {
     /// Stream summaries in server order.
-    package let streams: [_CoreStreamSummary]
+    package let streams: [_HotMicStreamSummary]
     /// The page number actually returned by the backend.
     package let currentPage: Int
     /// Whether the catalogue contains another page.
     package let hasNext: Bool
 
     /// Creates a catalogue page for an injected client.
-    package init(streams: [_CoreStreamSummary], currentPage: Int, hasNext: Bool) {
+    package init(streams: [_HotMicStreamSummary], currentPage: Int, hasNext: Bool) {
         self.streams = streams; self.currentPage = currentPage; self.hasNext = hasNext
     }
 }
 
-struct LiveCoreStreamClient: _CoreStreamClient {
+struct LiveHotMicStreamClient: _HotMicStreamClient {
     let client: HotMicClient
 
     /// Fetches one stream summary by its Core ID.
-    func fetchStream(id: String) async throws -> _CoreStreamSummary {
-        _CoreStreamSummary(try await client.fetchStream(id: id))
+    func fetchStream(id: String) async throws -> _HotMicStreamSummary {
+        _HotMicStreamSummary(try await client.fetchStream(id: id))
     }
 
     /// Fetches one stream summary by its Core ID.
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _CoreStreamPage {
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> _HotMicStreamPage {
         let page = try await client.fetchStreams(matching: query)
-        return _CoreStreamPage(streams: page.streams.map(_CoreStreamSummary.init),
+        return _HotMicStreamPage(streams: page.streams.map(_HotMicStreamSummary.init),
                               currentPage: page.pagination.currentPage, hasNext: page.pagination.hasNext)
     }
 }

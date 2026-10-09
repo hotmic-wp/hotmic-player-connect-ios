@@ -21,11 +21,11 @@ Dir.chdir(__dir__) do
     end
     target
   end
-  tests = project.new_target(:unit_test_bundle, 'HotMicPlayerCoreTests', :ios, '17.0')
-  group = project.main_group.new_group('Tests', '../Tests/HotMicPlayerCoreTests')
-  Dir['../Tests/HotMicPlayerCoreTests/*.swift'].sort.each { |f| tests.source_build_phase.add_file_reference(group.new_file(File.basename(f))) }
+  tests = project.new_target(:unit_test_bundle, 'HotMicPlayerConnectTests', :ios, '17.0')
+  group = project.main_group.new_group('Tests', '../Tests/HotMicPlayerConnectTests')
+  Dir['../Tests/HotMicPlayerConnectTests/*.swift'].sort.each { |f| tests.source_build_phase.add_file_reference(group.new_file(File.basename(f))) }
   (apps + [tests]).each do |target|
-    dependencies = [[local, 'HotMicPlayerCore'], [local, 'HotMicPlayerCoreTesting'], [player, 'HotMicPlayer'], [core, 'HotMicCore']]
+    dependencies = [[local, 'HotMicPlayerConnect'], [local, 'HotMicPlayerConnectTesting'], [player, 'HotMicPlayer'], [core, 'HotMicCore']]
     dependencies << [player, 'HotMicPlayerUI'] if target.name == 'StreamsAndEngagement'
     dependencies.each do |package, name|
       dep = project.new(Xcodeproj::Project::Object::XCSwiftPackageProductDependency)
@@ -38,7 +38,7 @@ Dir.chdir(__dir__) do
     target.build_configurations.each do |config|
       config.build_settings.merge!({
         'SWIFT_VERSION' => '5.0', 'GENERATE_INFOPLIST_FILE' => 'YES',
-        'PRODUCT_BUNDLE_IDENTIFIER' => "com.hotmic.playercore.#{target.name}",
+        'PRODUCT_BUNDLE_IDENTIFIER' => "com.hotmic.playerconnect.#{target.name}",
         'TARGETED_DEVICE_FAMILY' => '1', 'IPHONEOS_DEPLOYMENT_TARGET' => '17.0',
         'SWIFT_EMIT_LOC_STRINGS' => 'NO', 'SWIFT_STRICT_CONCURRENCY' => 'complete'
       })

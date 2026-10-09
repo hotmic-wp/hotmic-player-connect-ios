@@ -1,19 +1,19 @@
-# HotMicPlayerCore
+# HotMicPlayerConnect
 
 HotMic VOD streams and optional engagement for [HotMicPlayer](https://github.com/hotmic-wp/hotmic-player-sdk).
-Release candidate **1.0.0-rc.1**. Requires iOS 17+, Swift tools 6.0+ (Swift 5 language mode), and Xcode with the iOS SDK.
+Release candidate **1.0.0-rc.2**. Requires iOS 17+, Swift tools 6.0+ (Swift 5 language mode), and Xcode with the iOS SDK.
 HotMicCore 1.0.2 is an iOS binary dependency; build and test for iOS, not macOS.
 
 ## Install
 
-Add both packages in Xcode or Swift Package Manager. Use `exact: "1.0.0-rc.1"` for the release candidate:
+Add both packages in Xcode or Swift Package Manager. Pin each package to its release candidate:
 
 ```swift
 .package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", exact: "1.0.0-rc.1"),
-.package(url: "https://github.com/hotmic-wp/hotmic-player-core-ios", exact: "1.0.0-rc.1")
+.package(url: "https://github.com/hotmic-wp/hotmic-player-connect-ios", exact: "1.0.0-rc.2")
 ```
 
-The player repository requires read access. Link `HotMicPlayer` and `HotMicPlayerCore`. Link the transitive `HotMicCore` product when importing it
+The player repository requires read access. Link `HotMicPlayer` and `HotMicPlayerConnect`. Link the transitive `HotMicCore` product when importing it
 to construct a client. Engagement UI additionally links `HotMicPlayerUI` from the player package.
 
 ## Level 1: streams
@@ -22,14 +22,14 @@ to construct a client. Engagement UI additionally links `HotMicPlayerUI` from th
 import SwiftUI
 import HotMicCore
 import HotMicPlayer
-import HotMicPlayerCore
+import HotMicPlayerConnect
 
 @MainActor struct StreamsFeed: View {
     @State private var player: HMPlayer
     @Environment(\.scenePhase) private var scenePhase
     init(client: HotMicClient) {
-        let player = HMPlayer(resolver: CoreItemResolver(client: client))
-        player.playlistSource = CorePlaylistSource(client: client,
+        let player = HMPlayer(resolver: HotMicItemResolver(client: client))
+        player.playlistSource = HotMicPlaylistSource(client: client,
             query: HotMicStreamQuery(includesLive: false, includesScheduled: false,
                                     includesVOD: true, page: 1, limit: 20))
         _player = State(initialValue: player)
@@ -47,14 +47,14 @@ import HotMicPlayerCore
 For by-ID playback, on the main actor set `player.playlistSource = nil`, then
 `player.replaceAll([.hotmicStream(streamID)])` and `player.play()`.
 
-`CorePlaylistSource` preserves your query filters and page size, filters live/missing-URL summaries,
+`HotMicPlaylistSource` preserves your query filters and page size, filters live/missing-URL summaries,
 and produces direct URL items without by-ID fetches. The player loads further pages and removes overlap
 by `hotmic:<id>` identity. Cursors are opaque; nil returned cursor means end. Page-number pagination is
 not a catalogue snapshot; new publication can shift page boundaries. Restart the feed to refresh.
 
 The resolver has a 60-second success-only cache (32 entries; zero disables it). The player separately
 caches resolved items for its lifetime. Rebuild the player/adapters for changed media or credentials.
-Core transport/auth errors propagate; adapter validation errors use `HotMicPlayerCoreError`.
+Core transport/auth errors propagate; adapter validation errors use `HotMicPlayerConnectError`.
 The player’s `failedItemPolicy` defaults to `.skip`; `.stay` allows host retry UI.
 
 ## Level 2: streams + engagement
@@ -62,9 +62,9 @@ The player’s `failedItemPolicy` defaults to `.skip`; `.stay` allows host retry
 Add `import HotMicPlayerUI`, then use this setup and view in the same lifecycle wrapper:
 
 ```swift
-let interactions = CoreInteractionSource(client: client)
-let player = HMPlayer(resolver: CoreItemResolver(client: client), interactions: interactions)
-player.playlistSource = CorePlaylistSource(client: client)
+let interactions = HotMicInteractionSource(client: client)
+let player = HMPlayer(resolver: HotMicItemResolver(client: client), interactions: interactions)
+player.playlistSource = HotMicPlaylistSource(client: client)
 // SwiftUI body:
 HMVerticalFeedView(player: player, layout: HMOverlayLayout.self)
 ```
@@ -105,8 +105,8 @@ analytics data handling. Arbitrary URLs or an ID prefix alone never opt into eng
 
 Open [Examples/HotMicExamples.xcodeproj](Examples/HotMicExamples.xcodeproj). Choose `Streams` (roughly
 40 lines) or `StreamsAndEngagement`. Shared support holds fake clients, credentials and verification
-helpers. Both use ordinary public imports and the actual Core adapters. Examples also link/import
-`HotMicPlayerCoreTesting` for fake clients; production apps need only `HotMicPlayerCore`.
+helpers. Both use ordinary public imports and the actual Connect adapters. Examples also link/import
+`HotMicPlayerConnectTesting` for fake clients; production apps need only `HotMicPlayerConnect`.
 `Streams` links no `HotMicPlayerUI` product. No credentials selects fake mode with public MDN MP4/Apple
 VOD HLS fixtures (internet needed for videos). `--fake` bypasses all credential loading and guarantees
 no HotMic API calls. `--fake --verify` runs an optional fake-only integration script, including paging
@@ -130,7 +130,7 @@ For **authorized manual real-credential verification**:
 
 ## Documentation, versions and checks
 
-Read the [DocC guides](Sources/HotMicPlayerCore/HotMicPlayerCore.docc/HotMicPlayerCore.md),
+Read the [DocC guides](Sources/HotMicPlayerConnect/HotMicPlayerConnect.docc/HotMicPlayerConnect.md),
 [player guides](https://github.com/hotmic-wp/hotmic-player-sdk/tree/1.0.0-rc.1/Sources/HotMicPlayer/HotMicPlayer.docc),
 [overlay guides](https://github.com/hotmic-wp/hotmic-player-sdk/tree/1.0.0-rc.1/Sources/HotMicPlayerUI/HotMicPlayerUI.docc),
 [API review](docs/API_REVIEW_1.0.md), and [changelog](CHANGELOG.md).
@@ -138,9 +138,9 @@ Read the [DocC guides](Sources/HotMicPlayerCore/HotMicPlayerCore.docc/HotMicPlay
 This package follows semver: compatible additions in minor releases, fixes in patches, breaking changes
 in majors with deprecations where practical. RCs are prereleases for integration evaluation before
 the stable release.
-`HotMicPlayerCore.version` reports `1.0.0-rc.1`. The interim `skipFailedHotMicItems(using:)` helper
+`HotMicPlayerConnect.version` reports `1.0.0-rc.2`. The interim `skipFailedHotMicItems(using:)` helper
 was removed in 1.0; use native `HMPlayerConfiguration.failedItemPolicy`. Injectable clients, projected
-fixture values and accelerated retry controls live in the optional `HotMicPlayerCoreTesting` product,
+fixture values and accelerated retry controls live in the optional `HotMicPlayerConnectTesting` product,
 separate from the runtime API.
 
 CI runs on macOS for PRs and pushes to `main` only, with a nine-minute limit. It builds both examples

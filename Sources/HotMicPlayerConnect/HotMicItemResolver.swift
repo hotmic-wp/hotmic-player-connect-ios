@@ -4,19 +4,19 @@ import HotMicPlayer
 
 /// Resolves `hotmic` references to VOD. Successful results use a bounded in-memory
 /// LRU cache for 60 seconds. The player owns request coalescing and retries.
-public actor CoreItemResolver: HMItemResolver {
-    private let client: any _CoreStreamClient
+public actor HotMicItemResolver: HMItemResolver {
+    private let client: any _HotMicStreamClient
     private let cacheCapacity: Int
     private var cache: [String: (item: HMResolvedItem, expires: TimeInterval)] = [:]
     private var recency: [String] = []
     /// Creates a resolver sharing the host's authenticated Core client.
     /// Set capacity to zero to disable the adapter cache.
     public init(client: HotMicClient, cacheCapacity: Int = 32) {
-        self.init(client: LiveCoreStreamClient(client: client), cacheCapacity: cacheCapacity)
+        self.init(client: LiveHotMicStreamClient(client: client), cacheCapacity: cacheCapacity)
     }
 
     /// Creates an adapter with an injectable client, for offline previews or custom transport.
-    package init(client: any _CoreStreamClient, cacheCapacity: Int = 32) {
+    package init(client: any _HotMicStreamClient, cacheCapacity: Int = 32) {
         self.client = client
         self.cacheCapacity = max(0, cacheCapacity)
     }
@@ -25,7 +25,7 @@ public actor CoreItemResolver: HMItemResolver {
     public func resolve(_ ref: HMMediaItem.Reference) async throws -> HMResolvedItem {
         try Task.checkCancellation()
         guard ref.namespace == "hotmic" else {
-            throw HotMicPlayerCoreError.unsupportedNamespace(ref.namespace)
+            throw HotMicPlayerConnectError.unsupportedNamespace(ref.namespace)
         }
         if let entry = cache[ref.id], entry.expires > ProcessInfo.processInfo.systemUptime {
             touch(ref.id)

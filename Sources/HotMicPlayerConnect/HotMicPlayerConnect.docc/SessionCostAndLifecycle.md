@@ -5,7 +5,7 @@ Budget up to two Core sessions per viewer when engagement is enabled.
 ## Current plus next
 
 Streams alone fetch catalogue pages and by-ID summaries; they open no engagement sessions.
-With ``CoreInteractionSource``, current opens immediately and next opens after current has remained
+With ``HotMicInteractionSource``, current opens immediately and next opens after current has remained
 active for `nextSessionDelay` seconds (default 1). This dwell debounce avoids speculative sessions
 during fast swiping; it is elapsed lifecycle time, not accumulated playback. Zero opts into immediate next.
 Each Core session polls the API on roughly a six-second request window.

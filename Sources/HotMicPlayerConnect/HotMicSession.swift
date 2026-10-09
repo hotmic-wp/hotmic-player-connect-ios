@@ -2,29 +2,29 @@ import Foundation
 import HotMicCore
 
 /// Creates fresh, single-use engagement sessions. Access on the main actor.
-@MainActor package protocol _CoreSessionFactory {
+@MainActor package protocol _HotMicSessionFactory {
     /// Constructs an inert session; networking begins at start(). Main actor.
-    func makeSession(streamID: String) -> any _CoreSession
+    func makeSession(streamID: String) -> any _HotMicSession
 }
 
 /// An injectable single-use Core engagement session. All access is on the main actor.
-@MainActor package protocol _CoreSession: AnyObject {
+@MainActor package protocol _HotMicSession: AnyObject {
     /// Events subscribed before start; finish the stream when stopped.
-    var events: AsyncStream<_CoreSessionEvent> { get }
+    var events: AsyncStream<_HotMicSessionEvent> { get }
     /// Opens the session and returns its initial snapshot; throw on startup failure.
-    func start() async throws -> _CoreSessionSnapshot
+    func start() async throws -> _HotMicSessionSnapshot
     /// Closes polling and awaits cleanup. Must be idempotent, including after failed start.
     func stop() async
     /// Sends text and returns a server-confirmed message identity.
-    func sendChat(_ text: String) async throws -> _CoreChat
+    func sendChat(_ text: String) async throws -> _HotMicChat
     /// Adds a Core reaction type (like/fire/laugh/anger/sadness) to a message.
-    func addReaction(_ type: String, to messageID: String) async throws -> _CoreMessageReaction
+    func addReaction(_ type: String, to messageID: String) async throws -> _HotMicMessageReaction
     /// Submits the selected poll option; emit a poll event to reconcile the viewer vote.
     func vote(pollID: String, optionID: String) async throws
 }
 
 /// Raw Core chat with wall-clock creation time. Sendable across tasks.
-package struct _CoreChat: Sendable {
+package struct _HotMicChat: Sendable {
     /// Stable server identity.
     package let id: String
     /// Display name of the message author.
@@ -52,7 +52,7 @@ package struct _CoreChat: Sendable {
 }
 
 /// Message reaction identity supplied by Core. Sendable across tasks.
-package struct _CoreMessageReaction: Sendable {
+package struct _HotMicMessageReaction: Sendable {
     /// The affected server message ID.
     package let messageID: String
     /// The authenticated viewer ID in snapshots, or reacting user ID in reactions.
@@ -69,7 +69,7 @@ package struct _CoreMessageReaction: Sendable {
 }
 
 /// Raw Core poll state. Sendable across tasks.
-package struct _CorePoll: Sendable {
+package struct _HotMicPoll: Sendable {
     /// A poll option and its authoritative response count. Sendable across tasks.
     package struct Option: Sendable {
         /// Stable server identity.
@@ -107,7 +107,7 @@ package struct _CorePoll: Sendable {
 }
 
 /// Initial stream timing, viewer and history for a session. Sendable across tasks.
-package struct _CoreSessionSnapshot: Sendable {
+package struct _HotMicSessionSnapshot: Sendable {
     /// Stream live origin used to position VOD history; nil means unknown.
     package let liveDate: Date?
     /// Optional VOD duration in seconds; nil means unknown.
@@ -115,21 +115,21 @@ package struct _CoreSessionSnapshot: Sendable {
     /// The authenticated viewer ID in snapshots, or reacting user ID in reactions.
     package let userID: String
     /// Raw chat history returned at startup; not guaranteed to cover the full VOD.
-    package let messages: [_CoreChat]
+    package let messages: [_HotMicChat]
     /// Raw polls returned at startup.
-    package let polls: [_CorePoll]
+    package let polls: [_HotMicPoll]
     /// Creates a transport-independent value for an injected session.
     package init(liveDate: Date?, duration: TimeInterval?, userID: String,
-                messages: [_CoreChat] = [], polls: [_CorePoll] = []) {
+                messages: [_HotMicChat] = [], polls: [_HotMicPoll] = []) {
         self.liveDate = liveDate; self.duration = duration; self.userID = userID
         self.messages = messages; self.polls = polls
     }
 }
 
 /// Core session updates projected for the adapter. Sendable across tasks.
-package enum _CoreSessionEvent: Sendable {
+package enum _HotMicSessionEvent: Sendable {
     /// Engagement connectivity changed independently of playback.
-    case connection(CoreInteractionSource.ConnectionState)
+    case connection(HotMicInteractionSource.ConnectionState)
     /// Session startup failed; transient errors may create a fresh session after backoff.
     case failed(HotMicError)
     /// Stream timing changed; retained history is remapped when timing becomes available.
@@ -139,33 +139,33 @@ package enum _CoreSessionEvent: Sendable {
     /// The stream was deleted; the adapter closes the session.
     case deleted
     /// New messages and reaction additions, including server echoes.
-    case chat(messages: [_CoreChat], reactions: [_CoreMessageReaction])
+    case chat(messages: [_HotMicChat], reactions: [_HotMicMessageReaction])
     /// A moderator deleted a message by server ID.
     case messageDeleted(String)
     /// A reaction identity was removed.
-    case reactionDeleted(_CoreMessageReaction)
+    case reactionDeleted(_HotMicMessageReaction)
     /// A poll was created or updated.
-    case poll(_CorePoll)
+    case poll(_HotMicPoll)
     /// A moderator deleted a poll by server ID.
     case pollDeleted(String)
 }
 
-@MainActor struct LiveCoreSessionFactory: _CoreSessionFactory {
+@MainActor struct LiveHotMicSessionFactory: _HotMicSessionFactory {
     let client: HotMicClient
-    func makeSession(streamID: String) -> any _CoreSession {
-        LiveCoreSession(session: client.makeStreamSession(streamID: streamID))
+    func makeSession(streamID: String) -> any _HotMicSession {
+        LiveHotMicSession(session: client.makeStreamSession(streamID: streamID))
     }
 }
 
-@MainActor private final class LiveCoreSession: _CoreSession {
+@MainActor private final class LiveHotMicSession: _HotMicSession {
     let session: HotMicStreamSession
-    let events: AsyncStream<_CoreSessionEvent>
+    let events: AsyncStream<_HotMicSessionEvent>
     private let forwarding: Task<Void, Never>
     init(session: HotMicStreamSession) {
         self.session = session
         // Subscribe before start(), including the Core stream (not just our projection).
         let incoming = session.events
-        let pair = AsyncStream<_CoreSessionEvent>.makeStream()
+        let pair = AsyncStream<_HotMicSessionEvent>.makeStream()
         events = pair.stream
         forwarding = Task { @MainActor in
             for await event in incoming {
@@ -176,21 +176,21 @@ package enum _CoreSessionEvent: Sendable {
         }
     }
     deinit { forwarding.cancel() }
-    func start() async throws -> _CoreSessionSnapshot {
+    func start() async throws -> _HotMicSessionSnapshot {
         let snapshot = try await session.start()
-        return _CoreSessionSnapshot(liveDate: snapshot.stream.liveDate, duration: snapshot.stream.duration,
-                                   userID: snapshot.user.id, messages: snapshot.chatMessages.map(_CoreChat.init),
-                                   polls: snapshot.polls.map(_CorePoll.init))
+        return _HotMicSessionSnapshot(liveDate: snapshot.stream.liveDate, duration: snapshot.stream.duration,
+                                   userID: snapshot.user.id, messages: snapshot.chatMessages.map(_HotMicChat.init),
+                                   polls: snapshot.polls.map(_HotMicPoll.init))
     }
     func stop() async { await session.stop(); forwarding.cancel() }
-    func sendChat(_ text: String) async throws -> _CoreChat { _CoreChat(try await session.chat.sendChatMessage(text)) }
-    func addReaction(_ type: String, to messageID: String) async throws -> _CoreMessageReaction {
-        _CoreMessageReaction(try await session.chat.addChatMessageReaction(.init(rawValue: type), to: messageID))
+    func sendChat(_ text: String) async throws -> _HotMicChat { _HotMicChat(try await session.chat.sendChatMessage(text)) }
+    func addReaction(_ type: String, to messageID: String) async throws -> _HotMicMessageReaction {
+        _HotMicMessageReaction(try await session.chat.addChatMessageReaction(.init(rawValue: type), to: messageID))
     }
     func vote(pollID: String, optionID: String) async throws {
         try await session.polls.submitResponse(pollID: pollID, optionID: optionID)
     }
-    private static func map(_ event: HotMicStreamSession.Event) -> _CoreSessionEvent? {
+    private static func map(_ event: HotMicStreamSession.Event) -> _HotMicSessionEvent? {
         switch event {
         case .connectionChanged(.connected): return .connection(.connected)
         case .connectionChanged(.reconnecting(let attempt)): return .connection(.reconnecting(attempt: attempt))
@@ -199,11 +199,11 @@ package enum _CoreSessionEvent: Sendable {
         case .streamUpdated(let stream): return .stream(liveDate: stream.liveDate, duration: stream.duration)
         case .streamEnded: return .ended
         case .streamDeleted: return .deleted
-        case .chatBatchReceived(let batch): return .chat(messages: batch.messages.map(_CoreChat.init), reactions: batch.reactions.map(_CoreMessageReaction.init))
+        case .chatBatchReceived(let batch): return .chat(messages: batch.messages.map(_HotMicChat.init), reactions: batch.reactions.map(_HotMicMessageReaction.init))
         case .chatMessageDeleted(let id): return .messageDeleted(id)
         case .chatMessageReactionDeleted(let id, let user, let type):
             return .reactionDeleted(.init(messageID: id, userID: user, type: type.rawValue))
-        case .pollCreated(let poll), .pollUpdated(let poll): return .poll(_CorePoll(poll))
+        case .pollCreated(let poll), .pollUpdated(let poll): return .poll(_HotMicPoll(poll))
         case .pollDeleted(let id): return .pollDeleted(id)
         case .stateChanged, .participantsUpdated: return nil
         @unknown default: return nil

@@ -1,9 +1,9 @@
 import Foundation
-import HotMicPlayerCore
-import HotMicPlayerCoreTesting
+import HotMicPlayerConnect
+import HotMicPlayerConnectTesting
 
 /// Runs only in fake mode. Timers model session batches, connection recovery and moderation.
-@MainActor final class DemoSessions: CoreSessionFactory {
+@MainActor final class DemoSessions: HotMicSessionFactory {
     private(set) var live: Set<String> = []
     private(set) var maximumLive = 0
     var slowStops: Set<String> = []
@@ -13,7 +13,7 @@ import HotMicPlayerCoreTesting
         attempts[id, default: 0] += 1
         return reviewScript && id == "sample-1" && attempts[id] == 1
     }
-    func makeSession(streamID: String) -> any CoreSession { DemoSession(id: streamID, owner: self) }
+    func makeSession(streamID: String) -> any HotMicSession { DemoSession(id: streamID, owner: self) }
     func opened(_ id: String) {
         live.insert(id); maximumLive = max(maximumLive, live.count)
         record("sessionOpen", ["id": id, "live": live.sorted().joined(separator: ","), "count": String(live.count)])
@@ -27,11 +27,11 @@ import HotMicPlayerCoreTesting
     }
 }
 
-@MainActor private final class DemoSession: CoreSession {
+@MainActor private final class DemoSession: HotMicSession {
     let id: String
     weak var owner: DemoSessions?
-    let events: AsyncStream<CoreSessionEvent>
-    let continuation: AsyncStream<CoreSessionEvent>.Continuation
+    let events: AsyncStream<HotMicSessionEvent>
+    let continuation: AsyncStream<HotMicSessionEvent>.Continuation
     private var script: Task<Void, Never>?
     private var active = false
     private var stopped = false
@@ -39,11 +39,11 @@ import HotMicPlayerCoreTesting
     private let origin = Date(timeIntervalSince1970: 1_700_000_000)
     init(id: String, owner: DemoSessions) {
         self.id = id; self.owner = owner
-        let pair = AsyncStream<CoreSessionEvent>.makeStream()
+        let pair = AsyncStream<HotMicSessionEvent>.makeStream()
         events = pair.stream; continuation = pair.continuation
     }
     deinit { script?.cancel(); continuation.finish() }
-    func start() async throws -> CoreSessionSnapshot {
+    func start() async throws -> HotMicSessionSnapshot {
         guard !stopped, !active else { throw CancellationError() }
         active = true; owner?.opened(id)
         if owner?.shouldFail(id) == true {
@@ -67,7 +67,7 @@ import HotMicPlayerCoreTesting
                 try await Task.sleep(for: .seconds(1))
                 self.continuation.yield(.poll(self.poll()))
                 for (suffix, offset) in [("pre-live", -20.0), ("post-vod", 3600.0)] {
-                    self.continuation.yield(.poll(CorePoll(id: "\(self.id)-\(suffix)", question: "Outside recording",
+                    self.continuation.yield(.poll(HotMicFixturePoll(id: "\(self.id)-\(suffix)", question: "Outside recording",
                                                           createdAt: self.origin.addingTimeInterval(offset), options: [])))
                 }
                 self.owner?.record("pollCreated", ["id": self.id, "outsideWindow": "2"])
@@ -87,7 +87,7 @@ import HotMicPlayerCoreTesting
                 self.owner?.record("lateModeratedEcho", ["id": self.id])
             } catch { }
         }
-        return CoreSessionSnapshot(liveDate: id == "sample-7" ? nil : origin, duration: id == "sample-1" ? nil : (id == "sample-6" ? 1800 : 5.05),
+        return HotMicSessionSnapshot(liveDate: id == "sample-7" ? nil : origin, duration: id == "sample-1" ? nil : (id == "sample-6" ? 1800 : 5.05),
                                    userID: "demo-viewer", messages: [chat("welcome", "Sample host", "Welcome to \(id)", at: 0)], polls: [])
     }
     func stop() async {
@@ -100,7 +100,7 @@ import HotMicPlayerCoreTesting
             active = false; owner?.closed(id)
         }
     }
-    func sendChat(_ text: String) async throws -> CoreChat {
+    func sendChat(_ text: String) async throws -> HotMicChat {
         guard active, !stopped else { throw CancellationError() }
         number += 1
         let message = chat("sent-\(number)", "Demo viewer", text, at: 1000)
@@ -108,7 +108,7 @@ import HotMicPlayerCoreTesting
         // No event echo: adapter must return the server event and insert it itself.
         return message
     }
-    func addReaction(_ type: String, to messageID: String) async throws -> CoreMessageReaction {
+    func addReaction(_ type: String, to messageID: String) async throws -> HotMicMessageReaction {
         guard active, !stopped else { throw CancellationError() }
         owner?.record("reactionAdded", ["id": id, "messageID": messageID, "type": type])
         // Exercise reaction deletion, including clearing the viewer's selection.
@@ -118,18 +118,18 @@ import HotMicPlayerCoreTesting
             self.continuation.yield(.reactionDeleted(.init(messageID: messageID, userID: "demo-viewer", type: type)))
             self.owner?.record("reactionDeleted", ["id": self.id, "messageID": messageID])
         }
-        return CoreMessageReaction(messageID: messageID, userID: "demo-viewer", type: type)
+        return HotMicMessageReaction(messageID: messageID, userID: "demo-viewer", type: type)
     }
     func vote(pollID: String, optionID: String) async throws {
         guard active, !stopped else { throw CancellationError() }
         continuation.yield(.poll(poll(vote: optionID)))
         owner?.record("pollVoted", ["id": id, "optionID": optionID])
     }
-    private func chat(_ suffix: String, _ author: String, _ text: String, at offset: TimeInterval) -> CoreChat {
-        CoreChat(id: "\(id)-\(suffix)", author: author, text: text, createdAt: origin.addingTimeInterval(offset))
+    private func chat(_ suffix: String, _ author: String, _ text: String, at offset: TimeInterval) -> HotMicChat {
+        HotMicChat(id: "\(id)-\(suffix)", author: author, text: text, createdAt: origin.addingTimeInterval(offset))
     }
-    private func poll(vote: String? = nil) -> CorePoll {
-        CorePoll(id: "\(id)-poll", question: "Watch another replay?", createdAt: origin,
+    private func poll(vote: String? = nil) -> HotMicFixturePoll {
+        HotMicFixturePoll(id: "\(id)-poll", question: "Watch another replay?", createdAt: origin,
                  viewerVote: vote, options: [.init(id: "yes", text: "Yes", votes: 2 + (vote == "yes" ? 1 : 0)),
                                             .init(id: "again", text: "Run it back", votes: 1 + (vote == "again" ? 1 : 0))])
     }

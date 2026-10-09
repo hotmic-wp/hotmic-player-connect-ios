@@ -1,27 +1,27 @@
 import Foundation
 import HotMicCore
-import HotMicPlayerCore
-import HotMicPlayerCoreTesting
+import HotMicPlayerConnect
+import HotMicPlayerConnectTesting
 
 /// Public MDN MP4 and Apple VOD HLS fixtures. No HotMic API is contacted.
-actor DemoClient: CoreStreamClient {
+actor DemoClient: HotMicStreamClient {
 
-    private func summary(_ id: String) -> CoreStreamSummary {
+    private func summary(_ id: String) -> HotMicFixtureStreamSummary {
         let url = id == "sample-6"
             ? "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8"
             : "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
-        return CoreStreamSummary(id: id, isVOD: id != "bad-live",
+        return HotMicFixtureStreamSummary(id: id, isVOD: id != "bad-live",
                                  vodURL: id == "bad-missing" ? nil : URL(string: url),
                                  title: "Demo \(id)", duration: id == "sample-1" ? nil : (id == "sample-6" ? 1800 : 5.05))
     }
 
-    func fetchStream(id: String) async throws -> CoreStreamSummary {
+    func fetchStream(id: String) async throws -> HotMicFixtureStreamSummary {
         try Task.checkCancellation()
         await DemoEvidence.shared.record("fetchStream", ["id": id])
         return summary(id)
     }
 
-    func fetchStreams(matching query: HotMicStreamQuery) async throws -> CoreStreamPage {
+    func fetchStreams(matching query: HotMicStreamQuery) async throws -> HotMicFixtureStreamPage {
         try Task.checkCancellation()
         await DemoEvidence.shared.record("fetchPage", ["page": String(query.page)])
         let ids: [String]
@@ -30,7 +30,7 @@ actor DemoClient: CoreStreamClient {
         case 2: ids = ["sample-5", "sample-6", "sample-7"] // overlap: player owns de-duplication
         default: ids = []
         }
-        return CoreStreamPage(streams: ids.map(summary), currentPage: query.page, hasNext: query.page == 1)
+        return HotMicFixtureStreamPage(streams: ids.map(summary), currentPage: query.page, hasNext: query.page == 1)
     }
 }
 

@@ -2,31 +2,31 @@ import SwiftUI
 import Observation
 import HotMicCore
 import HotMicPlayer
-import HotMicPlayerCore
-import HotMicPlayerCoreTesting
+import HotMicPlayerConnect
+import HotMicPlayerConnectTesting
 
 /// Shared credential/fake setup, leaving the two app entry points small.
 @MainActor @Observable final class ExampleIntegration {
     let player: HMPlayer
-    let interactions: CoreInteractionSource?
+    let interactions: HotMicInteractionSource?
     let isFake: Bool
     var streamID = "sample-6"
-    private let playlist: CorePlaylistSource
+    private let playlist: HotMicPlaylistSource
     @ObservationIgnored private var eventsTask: Task<Void, Never>?
 
     init(engagement: Bool) {
-        let resolver: CoreItemResolver
+        let resolver: HotMicItemResolver
         if !ProcessInfo.processInfo.arguments.contains("--fake"), let credentials = DemoCredentials.load() {
             let client = HotMicClient(apiKey: credentials.HOTMIC_API_KEY, accessToken: credentials.HOTMIC_ACCESS_TOKEN)
-            resolver = CoreItemResolver(client: client)
-            playlist = CorePlaylistSource(client: client)
-            interactions = engagement ? CoreInteractionSource(client: client) : nil
+            resolver = HotMicItemResolver(client: client)
+            playlist = HotMicPlaylistSource(client: client)
+            interactions = engagement ? HotMicInteractionSource(client: client) : nil
             isFake = false
         } else {
             let client = DemoClient()
-            resolver = CoreItemResolver(client: client)
-            playlist = CorePlaylistSource(client: client)
-            interactions = engagement ? CoreInteractionSource(factory: DemoSessions()) : nil
+            resolver = HotMicItemResolver(client: client)
+            playlist = HotMicPlaylistSource(client: client)
+            interactions = engagement ? HotMicInteractionSource(factory: DemoSessions()) : nil
             isFake = true
         }
         if let interactions { player = HMPlayer(resolver: resolver, interactions: interactions) }
