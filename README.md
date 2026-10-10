@@ -1,6 +1,6 @@
 # HotMicPlayerConnect
 
-HotMic VOD streams and optional engagement for [HotMicPlayer](https://github.com/hotmic-wp/hotmic-player-sdk).
+HotMic VOD streams and optional engagement for [HotMicPlayer](https://github.com/hotmic-wp/hotmic-player-ios).
 Release candidate **1.0.0-rc.2**. Requires iOS 17+, Swift tools 6.0+ (Swift 5 language mode), and Xcode with the iOS SDK.
 HotMicCore 1.0.2 is an iOS binary dependency; build and test for iOS, not macOS.
 
@@ -9,11 +9,11 @@ HotMicCore 1.0.2 is an iOS binary dependency; build and test for iOS, not macOS.
 Add both packages in Xcode or Swift Package Manager. Pin each package to its release candidate:
 
 ```swift
-.package(url: "https://github.com/hotmic-wp/hotmic-player-sdk", exact: "1.0.0-rc.1"),
+.package(url: "https://github.com/hotmic-wp/hotmic-player-ios", exact: "1.0.0-rc.3"),
 .package(url: "https://github.com/hotmic-wp/hotmic-player-connect-ios", exact: "1.0.0-rc.2")
 ```
 
-The player repository requires read access. Link `HotMicPlayer` and `HotMicPlayerConnect`. Link the transitive `HotMicCore` product when importing it
+The player repository is public. Link `HotMicPlayer` and `HotMicPlayerConnect`. Link the transitive `HotMicCore` product when importing it
 to construct a client. Engagement UI additionally links `HotMicPlayerUI` from the player package.
 
 ## Level 1: streams
@@ -131,8 +131,8 @@ For **authorized manual real-credential verification**:
 ## Documentation, versions and checks
 
 Read the [DocC guides](Sources/HotMicPlayerConnect/HotMicPlayerConnect.docc/HotMicPlayerConnect.md),
-[player guides](https://github.com/hotmic-wp/hotmic-player-sdk/tree/1.0.0-rc.1/Sources/HotMicPlayer/HotMicPlayer.docc),
-[overlay guides](https://github.com/hotmic-wp/hotmic-player-sdk/tree/1.0.0-rc.1/Sources/HotMicPlayerUI/HotMicPlayerUI.docc),
+[player guides](https://github.com/hotmic-wp/hotmic-player-ios/tree/1.0.0-rc.3/Sources/HotMicPlayer/HotMicPlayer.docc),
+[overlay guides](https://github.com/hotmic-wp/hotmic-player-ios/tree/1.0.0-rc.3/Sources/HotMicPlayerUI/HotMicPlayerUI.docc),
 [API review](docs/API_REVIEW_1.0.md), and [changelog](CHANGELOG.md).
 
 This package follows semver: compatible additions in minor releases, fixes in patches, breaking changes
@@ -145,8 +145,7 @@ separate from the runtime API.
 
 CI runs on macOS for PRs and pushes to `main` only, with a nine-minute limit. It builds both examples
 (and the package) for simulator and unsigned generic device, runs strict DocC analysis, then the unit
-suite once. Hosted CI requires `PLAYER_SDK_READ_TOKEN`, a read-only contents token for the private
-player repository; the workflow configures temporary Git authentication before package resolution.
+suite once. The public player dependency resolves without a GitHub token or credential helper.
 `PARTNER_DOCS_DENYLIST` may optionally supply newline-separated private terms to the content check.
 Run `bash .github/scripts/validate-release.sh` locally with an available iOS simulator. Selection prefers
 an installed iPhone model and falls back to another available iPhone; `SIMULATOR_UDID` can select an
