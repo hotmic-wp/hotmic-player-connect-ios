@@ -9,7 +9,7 @@ Link `HotMicCore` too when importing it to create your authenticated client.
 Pin each package to its release candidate.
 
 ```swift
-.package(url: "https://github.com/hotmic-wp/hotmic-player-ios", exact: "1.0.0-rc.3"),
+.package(url: "https://github.com/hotmic-wp/hotmic-player-ios", exact: "1.1.0-alpha.1"),
 .package(url: "https://github.com/hotmic-wp/hotmic-player-connect-ios", exact: "1.0.0-rc.2")
 ```
 

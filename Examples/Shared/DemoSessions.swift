@@ -1,4 +1,5 @@
 import Foundation
+import HotMicPlayer
 import HotMicPlayerConnect
 import HotMicPlayerConnectTesting
 
@@ -9,6 +10,7 @@ import HotMicPlayerConnectTesting
     var slowStops: Set<String> = []
     private var attempts: [String: Int] = [:]
     let reviewScript = ProcessInfo.processInfo.arguments.contains("--review-script")
+    var itemEngagement: HMEngagementCapabilities { [.toggleReaction, .loadComments] }
     func shouldFail(_ id: String) -> Bool {
         attempts[id, default: 0] += 1
         return reviewScript && id == "sample-1" && attempts[id] == 1
@@ -36,6 +38,8 @@ import HotMicPlayerConnectTesting
     private var active = false
     private var stopped = false
     private var number = 0
+    private var fireCount = 12
+    private var fireReacted = false
     private let origin = Date(timeIntervalSince1970: 1_700_000_000)
     init(id: String, owner: DemoSessions) {
         self.id = id; self.owner = owner
@@ -56,7 +60,9 @@ import HotMicPlayerConnectTesting
                 try await Task.sleep(for: .seconds(1))
                 guard let self, !self.stopped else { return }
                 self.continuation.yield(.stream(liveDate: self.origin, duration: self.id == "sample-6" ? 1800 : 5.05))
+                self.continuation.yield(.liveComment(self.chat("comment-live", "Live", "Just arrived", at: 400), totalCount: 7))
                 self.owner?.record("timingArrived", ["id": self.id])
+                self.owner?.record("liveComment", ["id": self.id])
                 let batch = [self.chat("batch", "Sample participant", "This arrived in a chat batch", at: 0.5)] + (1..<50).map {
                     self.chat("burst-\($0)", "Replay viewer", "Batch message \($0)", at: 0.5 + Double($0) / 50)
                 }
@@ -88,7 +94,8 @@ import HotMicPlayerConnectTesting
             } catch { }
         }
         return HotMicSessionSnapshot(liveDate: id == "sample-7" ? nil : origin, duration: id == "sample-1" ? nil : (id == "sample-6" ? 1800 : 5.05),
-                                   userID: "demo-viewer", messages: [chat("welcome", "Sample host", "Welcome to \(id)", at: 0)], polls: [])
+                                   userID: "demo-viewer", messages: [chat("welcome", "Sample host", "Welcome to \(id)", at: 0)], polls: [],
+                                   itemReactions: [.init(emoji: "🔥", count: fireCount, reactedByViewer: fireReacted)], commentCount: 6)
     }
     func stop() async {
         guard !stopped else { return }
@@ -120,6 +127,34 @@ import HotMicPlayerConnectTesting
         }
         return HotMicMessageReaction(messageID: messageID, userID: "demo-viewer", type: type)
     }
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> HotMicItemReaction {
+        guard active, !stopped else { throw CancellationError() }
+        guard emoji == "🔥" else { throw HMInteractionError.unsupportedAction }
+        if fireReacted != isReacted {
+            fireCount = max(0, fireCount + (isReacted ? 1 : -1))
+            fireReacted = isReacted
+        }
+        owner?.record("itemReaction", ["id": id, "count": String(fireCount), "reacted": String(fireReacted)])
+        return HotMicItemReaction(emoji: "🔥", count: fireCount, reactedByViewer: fireReacted)
+    }
+    func comments(before cursor: String?) async throws -> HotMicCommentPage {
+        guard active, !stopped else { throw CancellationError() }
+        if cursor == nil {
+            owner?.record("commentPage", ["id": id, "cursor": "newest"])
+            return HotMicCommentPage(comments: [
+                comment("new-1", "Avery", "Newest comment", at: 300),
+                comment("new-2", "Blake", "Still watching", at: 240),
+                comment("new-3", "Casey", "Fire this", at: 180)
+            ], olderCursor: "older")
+        }
+        guard cursor == "older" else { throw HMInteractionError.unsupportedAction }
+        owner?.record("commentPage", ["id": id, "cursor": "older"])
+        return HotMicCommentPage(comments: [
+            comment("old-1", "Drew", "Earlier comment", at: 60),
+            comment("old-2", "Ellis", "From the start", at: 30),
+            comment("old-3", "Finn", "First in", at: 10)
+        ])
+    }
     func vote(pollID: String, optionID: String) async throws {
         guard active, !stopped else { throw CancellationError() }
         continuation.yield(.poll(poll(vote: optionID)))
@@ -127,6 +162,9 @@ import HotMicPlayerConnectTesting
     }
     private func chat(_ suffix: String, _ author: String, _ text: String, at offset: TimeInterval) -> HotMicChat {
         HotMicChat(id: "\(id)-\(suffix)", author: author, text: text, createdAt: origin.addingTimeInterval(offset))
+    }
+    private func comment(_ suffix: String, _ author: String, _ text: String, at offset: TimeInterval) -> HotMicChat {
+        chat("comment-\(suffix)", author, text, at: offset)
     }
     private func poll(vote: String? = nil) -> HotMicFixturePoll {
         HotMicFixturePoll(id: "\(id)-poll", question: "Watch another replay?", createdAt: origin,

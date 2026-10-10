@@ -1,10 +1,17 @@
 import Foundation
 import HotMicCore
+import HotMicPlayer
 
 /// Creates fresh, single-use engagement sessions. Access on the main actor.
 @MainActor package protocol _HotMicSessionFactory {
     /// Constructs an inert session; networking begins at start(). Main actor.
     func makeSession(streamID: String) -> any _HotMicSession
+    /// Item fire membership and comment paging this backend can serve. Defaults to none.
+    var itemEngagement: HMEngagementCapabilities { get }
+}
+
+extension _HotMicSessionFactory {
+    var itemEngagement: HMEngagementCapabilities { [] }
 }
 
 /// An injectable single-use Core engagement session. All access is on the main actor.
@@ -19,8 +26,21 @@ import HotMicCore
     func sendChat(_ text: String) async throws -> _HotMicChat
     /// Adds a Core reaction type (like/fire/laugh/anger/sadness) to a message.
     func addReaction(_ type: String, to messageID: String) async throws -> _HotMicMessageReaction
+    /// Sets membership in an item reaction count and returns authoritative totals.
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> _HotMicItemReaction
+    /// Loads newest comments for nil, or older comments for an opaque cursor.
+    func comments(before cursor: String?) async throws -> _HotMicCommentPage
     /// Submits the selected poll option; emit a poll event to reconcile the viewer vote.
     func vote(pollID: String, optionID: String) async throws
+}
+
+extension _HotMicSession {
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> _HotMicItemReaction {
+        throw HMInteractionError.unsupportedAction
+    }
+    func comments(before cursor: String?) async throws -> _HotMicCommentPage {
+        throw HMInteractionError.unsupportedAction
+    }
 }
 
 /// Raw Core chat with wall-clock creation time. Sendable across tasks.
@@ -65,6 +85,34 @@ package struct _HotMicMessageReaction: Sendable {
     }
     init(_ reaction: HotMicChatMessage.Reaction) {
         self.init(messageID: reaction.chatID, userID: reaction.userID, type: reaction.type.rawValue)
+    }
+}
+
+/// Authoritative item reaction membership. Independent of timed stream reactions.
+package struct _HotMicItemReaction: Sendable {
+    /// Player emoji, such as fire.
+    package let emoji: String
+    /// Total memberships, including the viewer.
+    package let count: Int
+    /// Whether the signed-in viewer belongs to this count.
+    package let reactedByViewer: Bool
+    /// Creates a transport-independent value.
+    package init(emoji: String, count: Int, reactedByViewer: Bool) {
+        self.emoji = emoji; self.count = max(0, count); self.reactedByViewer = reactedByViewer
+    }
+}
+
+/// One page of item comments, separate from media-clock replay.
+package struct _HotMicCommentPage: Sendable {
+    /// Comments in this page. They are not timeline events.
+    package let comments: [_HotMicChat]
+    /// Opaque cursor for an older page, or nil at the end.
+    package let olderCursor: String?
+    /// Authoritative item comment count, when the backend provides one.
+    package let totalCount: Int?
+    /// Creates a transport-independent page. A nil total leaves the known count unchanged.
+    package init(comments: [_HotMicChat], olderCursor: String? = nil, totalCount: Int? = nil) {
+        self.comments = comments; self.olderCursor = olderCursor; self.totalCount = totalCount.map { max(0, $0) }
     }
 }
 
@@ -118,11 +166,17 @@ package struct _HotMicSessionSnapshot: Sendable {
     package let messages: [_HotMicChat]
     /// Raw polls returned at startup.
     package let polls: [_HotMicPoll]
+    /// Known item reaction totals at startup. Empty means the backend has none.
+    package let itemReactions: [_HotMicItemReaction]
+    /// Known item comment count at startup, or nil when unknown.
+    package let commentCount: Int?
     /// Creates a transport-independent value for an injected session.
     package init(liveDate: Date?, duration: TimeInterval?, userID: String,
-                messages: [_HotMicChat] = [], polls: [_HotMicPoll] = []) {
+                messages: [_HotMicChat] = [], polls: [_HotMicPoll] = [],
+                itemReactions: [_HotMicItemReaction] = [], commentCount: Int? = nil) {
         self.liveDate = liveDate; self.duration = duration; self.userID = userID
         self.messages = messages; self.polls = polls
+        self.itemReactions = itemReactions; self.commentCount = commentCount
     }
 }
 
@@ -148,6 +202,10 @@ package enum _HotMicSessionEvent: Sendable {
     case poll(_HotMicPoll)
     /// A moderator deleted a poll by server ID.
     case pollDeleted(String)
+    /// Authoritative item reaction membership changed.
+    case itemReaction(_HotMicItemReaction)
+    /// An item comment arrived outside the media-clock replay timeline.
+    case liveComment(_HotMicChat, totalCount: Int?)
 }
 
 @MainActor struct LiveHotMicSessionFactory: _HotMicSessionFactory {
@@ -189,6 +247,14 @@ package enum _HotMicSessionEvent: Sendable {
     }
     func vote(pollID: String, optionID: String) async throws {
         try await session.polls.submitResponse(pollID: pollID, optionID: optionID)
+    }
+    /// HotMicCore 1.0.2 has no stream or item reaction membership API.
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> _HotMicItemReaction {
+        throw HMInteractionError.unsupportedAction
+    }
+    /// HotMicCore 1.0.2 returns one snapshot chat list plus live batches, with no cursor or comment count.
+    func comments(before cursor: String?) async throws -> _HotMicCommentPage {
+        throw HMInteractionError.unsupportedAction
     }
     private static func map(_ event: HotMicStreamSession.Event) -> _HotMicSessionEvent? {
         switch event {

@@ -25,6 +25,11 @@ The package’s two examples contain complete fake implementations. The adapter 
 pagination filtering, replay timing, moderation and bounded session lifecycle. Testing constructors
 accept the same cache/query/dwell settings as the runtime, plus `retryBaseDelay` for accelerated tests.
 
+`itemEngagement` defaults to none, matching HotMicCore 1.0.2. Opt into `.toggleReaction` and
+`.loadComments` only when the session implements `setItemReaction(_:isReacted:)` and `comments(before:)`.
+Returned comment pages stay off the VOD timeline. Snapshot `itemReactions` and `commentCount`, plus
+`itemReaction` and `liveComment` events, are what the adapter publishes on `HMEngagement`.
+
 ## Topics
 
 ### Stream fixtures
@@ -39,4 +44,6 @@ accept the same cache/query/dwell settings as the runtime, plus `retryBaseDelay`
 - ``HotMicSessionEvent``
 - ``HotMicChat``
 - ``HotMicMessageReaction``
+- ``HotMicItemReaction``
+- ``HotMicCommentPage``
 - ``HotMicFixturePoll``

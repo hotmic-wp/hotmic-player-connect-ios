@@ -24,3 +24,6 @@ is unknown. Server echoes reconcile by ID. Once duration is known, source event 
 to its window. Deletion updates discard retained raw values and the player suppresses late echoes.
 
 Live playback, signed URL refresh and a full historical replay archive are outside this release.
+Item comment pages are a separate list. HotMicCore 1.0.2 cannot page that list, so authenticated
+Connect does not load it. When a testing session does, those comments never change `messages(near:)`,
+the waveform, or timed reaction totals.

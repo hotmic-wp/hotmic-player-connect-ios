@@ -68,6 +68,23 @@ import HotMicPlayerConnectTesting
             guard let item = player.currentItem else { throw CancellationError() }
             if let interactions {
                 let engagement = player.engagement(for: item)
+                for _ in 0..<30 where engagement.reactionSummary(for: "🔥") == nil {
+                    try await Task.sleep(for: .milliseconds(100))
+                }
+                guard let before = engagement.reactionSummary(for: "🔥"), before.reactedByViewer == false else { throw CancellationError() }
+                try await engagement.toggleReaction("🔥")
+                guard let fired = engagement.reactionSummary(for: "🔥"), fired.reactedByViewer, fired.count == before.count + 1 else { throw CancellationError() }
+                await DemoEvidence.shared.record("itemReaction", ["count": String(fired.count), "reacted": "true"])
+                let replay = engagement.messages(near: 42, lookback: 42, limit: 200).map(\.id)
+                try await engagement.loadComments()
+                try await engagement.loadComments()
+                let rows = engagement.comments().map(\.id)
+                guard rows.contains(where: { $0.hasSuffix("comment-new-1") }),
+                      rows.contains(where: { $0.hasSuffix("comment-old-1") }),
+                      engagement.olderCommentsCursor == nil,
+                      engagement.messages(near: 42, lookback: 42, limit: 200).map(\.id) == replay,
+                      replay.allSatisfy({ !$0.contains("comment-") }) else { throw CancellationError() }
+                await DemoEvidence.shared.record("itemComments", ["rows": rows.joined(separator: ","), "count": String(engagement.commentCount ?? -1)])
                 // Snapshot and item both lack duration. Send before timing arrives.
                 try await engagement.sendChat("Send before duration", at: 2)
                 await DemoEvidence.shared.record("unknownDurationSend", ["offset": String(interactions.timeline(for: item).events(in: 2...2).first?.offset ?? -1)])
@@ -77,6 +94,10 @@ import HotMicPlayerConnectTesting
                 let messages = engagement.messages(near: 5, lookback: 5, limit: 100)
                 await DemoEvidence.shared.record("recoveredTiming", ["history": String(messages.contains { $0.id == "sample-1-welcome" }), "ownAt2": String(messages.contains { $0.isOwn && $0.offset == 2 }), "messages": String(messages.count), "polls": String(engagement.polls.count), "vote": engagement.polls.first?.viewerVote ?? "pending"])
                 try await Task.sleep(for: .seconds(10))
+                let comments = engagement.comments().map(\.id)
+                guard comments.contains(where: { $0.hasSuffix("comment-live") }),
+                      !engagement.messages(near: 42, lookback: 42, limit: 200).contains(where: { $0.id.contains("comment-") }) else { throw CancellationError() }
+                await DemoEvidence.shared.record("liveComment", ["present": "true", "count": String(engagement.commentCount ?? -1)])
                 await DemoEvidence.shared.record("moderation", ["deletedChatHidden": String(!engagement.messages(near: 5, lookback: 5, limit: 100).contains { $0.id == "sample-1-batch" }), "deletedPollHidden": String(engagement.polls.isEmpty)])
             }
             // Advance until page two is fetched (overlap de-duplicated by player).

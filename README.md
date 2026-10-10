@@ -9,7 +9,7 @@ HotMicCore 1.0.2 is an iOS binary dependency; build and test for iOS, not macOS.
 Add both packages in Xcode or Swift Package Manager. Pin each package to its release candidate:
 
 ```swift
-.package(url: "https://github.com/hotmic-wp/hotmic-player-ios", exact: "1.0.0-rc.3"),
+.package(url: "https://github.com/hotmic-wp/hotmic-player-ios", exact: "1.1.0-alpha.1"),
 .package(url: "https://github.com/hotmic-wp/hotmic-player-connect-ios", exact: "1.0.0-rc.2")
 ```
 
@@ -70,7 +70,9 @@ HMVerticalFeedView(player: player, layout: HMOverlayLayout.self)
 ```
 
 Use one interaction source per player and signed-in user. Chat sending, message reactions
-(👍 / 🔥 / 😆 / 😡 / 😢) and voting are supported; stream emoji reactions are unavailable.
+(👍 / 🔥 / 😆 / 😡 / 😢) and voting are supported. Timed stream emoji reactions are unavailable.
+Item fire membership and comment paging are optional: HotMicCore 1.0.2 does not provide them, so an
+authenticated source omits `.toggleReaction` and `.loadComments`. A testing session can supply both.
 Connection failures affect engagement independently of playback. Set `isFeedVisible = false` when
 backgrounded or when hiding a mounted feed; restore on visibility. Call `teardown()` on dismissal.
 
@@ -110,7 +112,8 @@ helpers. Both use ordinary public imports and the actual Connect adapters. Examp
 `Streams` links no `HotMicPlayerUI` product. No credentials selects fake mode with public MDN MP4/Apple
 VOD HLS fixtures (internet needed for videos). `--fake` bypasses all credential loading and guarantees
 no HotMic API calls. `--fake --verify` runs an optional fake-only integration script, including paging
-and by-ID resolution; engagement adds timing recovery, sends, reactions, voting and moderation.
+and by-ID resolution; engagement adds timing recovery, sends, reactions, voting, moderation, fire
+membership, older comments and a live comment. Item comments do not change the VOD timeline.
 Safe fixture evidence is written to app Documents as `demo-evidence.jsonl`; real mode writes none.
 
 For **authorized manual real-credential verification**:
@@ -131,8 +134,8 @@ For **authorized manual real-credential verification**:
 ## Documentation, versions and checks
 
 Read the [DocC guides](Sources/HotMicPlayerConnect/HotMicPlayerConnect.docc/HotMicPlayerConnect.md),
-[player guides](https://github.com/hotmic-wp/hotmic-player-ios/tree/1.0.0-rc.3/Sources/HotMicPlayer/HotMicPlayer.docc),
-[overlay guides](https://github.com/hotmic-wp/hotmic-player-ios/tree/1.0.0-rc.3/Sources/HotMicPlayerUI/HotMicPlayerUI.docc),
+[player guides](https://github.com/hotmic-wp/hotmic-player-ios/tree/1.1.0-alpha.1/Sources/HotMicPlayer/HotMicPlayer.docc),
+[overlay guides](https://github.com/hotmic-wp/hotmic-player-ios/tree/1.1.0-alpha.1/Sources/HotMicPlayerUI/HotMicPlayerUI.docc),
 [API review](docs/API_REVIEW_1.0.md), and [changelog](CHANGELOG.md).
 
 This package follows semver: compatible additions in minor releases, fixes in patches, breaking changes
