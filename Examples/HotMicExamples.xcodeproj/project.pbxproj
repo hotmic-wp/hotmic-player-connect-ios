@@ -275,7 +275,7 @@
 			mainGroup = 8D5E7B3B4A4807B129B842B3;
 			minimizedProjectReferenceProxies = 0;
 			packageReferences = (
-				F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */,
+				F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-ios" */,
 				10CD30C431DC796CE93D355C /* XCRemoteSwiftPackageReference "hotmic-core-ios" */,
 				F4A3BEFE3B3BA65380888922 /* XCLocalSwiftPackageReference ".." */,
 			);
@@ -639,12 +639,12 @@
 				minimumVersion = 1.0.2;
 			};
 		};
-		F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */ = {
+		F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/hotmic-wp/hotmic-player-sdk";
+			repositoryURL = "https://github.com/hotmic-wp/hotmic-player-ios";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = "1.0.0-rc.1";
+				minimumVersion = "1.0.0-rc.3";
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
@@ -652,12 +652,12 @@
 /* Begin XCSwiftPackageProductDependency section */
 		017D1D96D5554CC74A2C8A32 /* HotMicPlayerUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-ios" */;
 			productName = HotMicPlayerUI;
 		};
 		1F0C599F5B2AAC9056CADABA /* HotMicPlayer */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-ios" */;
 			productName = HotMicPlayer;
 		};
 		29747CEA9FFB2E7D11851FC7 /* HotMicPlayerConnectTesting */ = {
@@ -672,12 +672,12 @@
 		};
 		62145447A9938692CEA46D50 /* HotMicPlayer */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-ios" */;
 			productName = HotMicPlayer;
 		};
 		73F893DBB93C4149530FB5A8 /* HotMicPlayer */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-sdk" */;
+			package = F06FF2BA39EFEB69A871EC14 /* XCRemoteSwiftPackageReference "hotmic-player-ios" */;
 			productName = HotMicPlayer;
 		};
 		895902C865B7619165DF2B03 /* HotMicPlayerConnect */ = {

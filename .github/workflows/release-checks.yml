@@ -34,17 +34,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Configure private dependency access
-        env:
-          PLAYER_SDK_READ_TOKEN: ${{ secrets.PLAYER_SDK_READ_TOKEN }}
-        run: bash .github/scripts/configure-dependency-access.sh
       - name: Check partner content, build package and examples, DocC, then run the suite once
         env:
           PARTNER_DOCS_DENYLIST: ${{ secrets.PARTNER_DOCS_DENYLIST }}
         run: bash .github/scripts/validate-release.sh
-      - name: Remove temporary dependency credentials
-        if: always()
-        run: |
-          if [[ -n "${GIT_CONFIG_GLOBAL:-}" ]]; then
-            rm -f -- "$GIT_CONFIG_GLOBAL"
-          fi

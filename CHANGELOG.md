@@ -1,6 +1,8 @@
 # Changelog
 
-## 1.0.0-rc.2
+## 1.0.0-rc.2 (unreleased)
+
+- Move the HotMicPlayer dependency to the public `hotmic-wp/hotmic-player-ios` repository, requiring `from: "1.0.0-rc.3"`; update package identities, examples and documentation, and remove private dependency credentials from CI.
 
 Renamed the HotMicPlayerConnect add-on and its public/testing surface; no behavior change. No deprecated typealiases. HotMicCore / HotMic Core SDK remains the dependency. Nested types and members follow their enclosing renamed type. The repository publication rename is managed separately.
 
