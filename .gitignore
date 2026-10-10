@@ -6,5 +6,6 @@ xcuserdata/
 .DS_Store
 HotMicCredentials.json
 .validation/
+.bench/
 bench/
 .context/
