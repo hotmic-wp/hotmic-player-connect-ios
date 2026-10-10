@@ -146,12 +146,20 @@ was removed in 1.0; use native `HMPlayerConfiguration.failedItemPolicy`. Injecta
 fixture values and accelerated retry controls live in the optional `HotMicPlayerConnectTesting` product,
 separate from the runtime API.
 
-CI runs on macOS for PRs and pushes to `main` only, with a nine-minute limit. It builds both examples
-(and the package) for simulator and unsigned generic device, runs strict DocC analysis, then the unit
-suite once. The public player dependency resolves without a GitHub token or credential helper.
+CI runs on macOS for pull requests and pushes to `main` only. Three jobs run in parallel on separate
+runners, each with a ten-minute limit: package unit tests on a simulator, both example apps compiled for
+the simulator, and the partner-content check with an unsigned generic-device library build plus strict
+DocC analysis. The public player dependency resolves without a GitHub token or credential helper.
 `PARTNER_DOCS_DENYLIST` may optionally supply newline-separated private terms to the content check.
-Run `bash .github/scripts/validate-release.sh` locally with an available iOS simulator. Selection prefers
-an installed iPhone model and falls back to another available iPhone; `SIMULATOR_UDID` can select an
-existing device explicitly. `BUILD_ONLY=1` defers the suite for a local example smoke run.
+Run the jobs locally with an available iOS simulator:
+
+```
+bash .github/scripts/ci-checks.sh
+bash .github/scripts/ci-examples.sh
+bash .github/scripts/ci-unit-tests.sh
+```
+
+Selection prefers an installed iPhone model and falls back to another available iPhone; `SIMULATOR_UDID`
+can select an existing device for the unit-test job.
 No global installation, credentials or signing configuration changes are needed. The checked-in project
 can be regenerated with `ruby Examples/generate_project.rb` if the `xcodeproj` gem is already installed.
