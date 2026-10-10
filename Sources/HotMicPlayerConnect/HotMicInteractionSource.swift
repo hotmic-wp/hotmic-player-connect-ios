@@ -139,9 +139,10 @@ import HotMicPlayer
         guard factory.itemEngagement.contains(.toggleReaction) else { throw HMInteractionError.unsupportedAction }
         let slot = try activeSlot(for: item)
         let reaction = try await slot.session.setItemReaction(emoji, isReacted: isReacted)
+        guard reaction.emoji == emoji else { throw HMInteractionError.unsupportedAction }
         let summary = HMItemReactionSummary(count: reaction.count, reactedByViewer: reaction.reactedByViewer)
-        slot.timeline.itemReactions[reaction.emoji] = summary
-        slot.timeline.engagement?.updateReactionSummary(summary, for: reaction.emoji)
+        slot.timeline.itemReactions[emoji] = summary
+        slot.timeline.engagement?.updateReactionSummary(summary, for: emoji)
         return summary
     }
     /// Loads an item comment page without placing those comments on the VOD timeline. Main actor.
@@ -319,11 +320,13 @@ import HotMicPlayer
             reactions.forEach { applyReaction($0, added: true, to: slot) }
         case .messageDeleted(let id):
             slot.timeline.remove(id)
+            slot.timeline.removeLiveComment(id)
             deletion(event, timeline: slot.timeline)
         case .reactionDeleted(let reaction): applyReaction(reaction, added: false, to: slot)
         case .poll(let poll): upsert(poll, in: slot)
-        case .itemReaction(let reaction): applyItemState([reaction], commentCount: nil, to: slot.timeline)
-        case .liveComment(let chat, let totalCount):
+        case .itemReaction(let reaction) where factory.itemEngagement.contains(.toggleReaction):
+            applyItemState([reaction], commentCount: nil, to: slot.timeline)
+        case .liveComment(let chat, let totalCount) where factory.itemEngagement.contains(.loadComments):
             let event = commentEvent(chat)
             slot.timeline.rememberLiveComment(event)
             slot.timeline.engagement?.upsertComment(event)

@@ -80,6 +80,10 @@ import HotMicPlayer
             liveComments[liveCommentOrder.removeFirst()] = nil
         }
     }
+    func removeLiveComment(_ id: String) {
+        liveComments[id] = nil
+        liveCommentOrder.removeAll { $0 == id }
+    }
     func remember(_ poll: _HotMicPoll) {
         if rawPolls[poll.id] == nil { pollOrder.append(poll.id) }
         rawPolls[poll.id] = poll

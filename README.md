@@ -1,16 +1,16 @@
 # HotMicPlayerConnect
 
 HotMic VOD streams and optional engagement for [HotMicPlayer](https://github.com/hotmic-wp/hotmic-player-ios).
-Release candidate **1.0.0-rc.2**. Requires iOS 17+, Swift tools 6.0+ (Swift 5 language mode), and Xcode with the iOS SDK.
+Prerelease **1.1.0-alpha.1**. Requires iOS 17+, Swift tools 6.0+ (Swift 5 language mode), and Xcode with the iOS SDK.
 HotMicCore 1.0.2 is an iOS binary dependency; build and test for iOS, not macOS.
 
 ## Install
 
-Add both packages in Xcode or Swift Package Manager. Pin each package to its release candidate:
+Add both packages in Xcode or Swift Package Manager. Pin exact versions until 1.1.0 ships; a `from:` requirement on a prerelease floats across later prereleases.
 
 ```swift
 .package(url: "https://github.com/hotmic-wp/hotmic-player-ios", exact: "1.1.0-alpha.1"),
-.package(url: "https://github.com/hotmic-wp/hotmic-player-connect-ios", exact: "1.0.0-rc.2")
+.package(url: "https://github.com/hotmic-wp/hotmic-player-connect-ios", exact: "1.1.0-alpha.1")
 ```
 
 The player repository is public. Link `HotMicPlayer` and `HotMicPlayerConnect`. Link the transitive `HotMicCore` product when importing it
@@ -141,7 +141,7 @@ Read the [DocC guides](Sources/HotMicPlayerConnect/HotMicPlayerConnect.docc/HotM
 This package follows semver: compatible additions in minor releases, fixes in patches, breaking changes
 in majors with deprecations where practical. RCs are prereleases for integration evaluation before
 the stable release.
-`HotMicPlayerConnect.version` reports `1.0.0-rc.2`. The interim `skipFailedHotMicItems(using:)` helper
+`HotMicPlayerConnect.version` reports `1.1.0-alpha.1`. The interim `skipFailedHotMicItems(using:)` helper
 was removed in 1.0; use native `HMPlayerConfiguration.failedItemPolicy`. Injectable clients, projected
 fixture values and accelerated retry controls live in the optional `HotMicPlayerConnectTesting` product,
 separate from the runtime API.

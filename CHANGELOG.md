@@ -1,10 +1,13 @@
 # Changelog
 
-## 1.0.0-rc.2 (unreleased)
+## 1.1.0-alpha.1 (unreleased)
 
-- Require HotMicPlayer `from: "1.1.0-alpha.1"`.
-- Add `setReaction(_:isReacted:for:)` and `comments(for:before:)` on `HotMicInteractionSource`. HotMicCore 1.0.2 has message reactions only: `HotMicStream` and `HotMicStreamSession` expose no item or stream reaction membership, and chat history is one snapshot list plus `chatBatchReceived` with no cursor or comment count. Authenticated sessions therefore do not advertise `.toggleReaction` or `.loadComments`. A testing factory can opt in through `itemEngagement` and implement `setItemReaction(_:isReacted:)` and `comments(before:)`. The StreamsAndEngagement fake shows fire membership, the comment count, older comments, and a live comment. Item comments stay off the VOD timeline.
-- Move the HotMicPlayer dependency to the public `hotmic-wp/hotmic-player-ios` repository; update package identities, examples and documentation, and remove private dependency credentials from CI.
+- Require HotMicPlayer `from: "1.1.0-alpha.1"`. A `from:` requirement on a prerelease floats across later prereleases; pin exact player and Connect versions until 1.1.0 ships.
+- Add `setReaction(_:isReacted:for:)` and `comments(for:before:)` on `HotMicInteractionSource`. HotMicCore 1.0.2 has message reactions only: `HotMicStream` and `HotMicStreamSession` expose no item or stream reaction membership, and chat history is one snapshot list plus `chatBatchReceived` with no cursor or comment count. Authenticated sessions therefore do not advertise `.toggleReaction` or `.loadComments`. A testing factory can opt in through `itemEngagement` and implement `setItemReaction(_:isReacted:)` and `comments(before:)`. The StreamsAndEngagement fake shows fire membership, the comment count, older comments, and a live comment. Item comments stay off the VOD timeline. Set `HotMicPlayerConnect.version` to `1.1.0-alpha.1`.
+
+## 1.0.0-rc.2
+
+- Move the HotMicPlayer dependency to the public `hotmic-wp/hotmic-player-ios` repository, requiring `from: "1.0.0-rc.3"`; update package identities, examples and documentation, and remove private dependency credentials from CI.
 
 Renamed the HotMicPlayerConnect add-on and its public/testing surface; no behavior change. No deprecated typealiases. HotMicCore / HotMic Core SDK remains the dependency. Nested types and members follow their enclosing renamed type. The repository publication rename is managed separately.
 

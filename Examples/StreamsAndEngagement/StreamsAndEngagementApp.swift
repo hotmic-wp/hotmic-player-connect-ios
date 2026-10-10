@@ -49,6 +49,12 @@ import HotMicPlayerConnect
     let item: HMMediaItem
     var body: some View {
         let engagement = player.engagement(for: item)
+        if engagement.supports(.toggleReaction) || engagement.supports(.loadComments) {
+            controls(engagement)
+        }
+    }
+
+    @ViewBuilder private func controls(_ engagement: HMEngagement) -> some View {
         let summary = engagement.reactionSummary(for: "🔥")
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -72,7 +78,7 @@ import HotMicPlayerConnect
                 .accessibilityIdentifier("connect-older-comments")
             }
             .buttonStyle(.bordered)
-            VStack(alignment: .leading, spacing: 2) {
+            LazyVStack(alignment: .leading, spacing: 2) {
                 ForEach(engagement.comments(), id: \.rowID) { message in
                     Text("\(message.author): \(message.text)").font(.caption).lineLimit(1)
                 }

@@ -20,6 +20,7 @@ import HotMicCore
     var itemEngagement: HMEngagementCapabilities = []
     var fireCount = 4
     var fireReacted = false
+    var reactionEmojiOverride: String?
     let origin = Date(timeIntervalSince1970: 1000)
     func makeSession(streamID: String) -> any HotMicSession {
         let session = Session(id: streamID, owner: self)
@@ -73,6 +74,9 @@ import HotMicCore
         .init(messageID: messageID, userID: "viewer", type: type)
     }
     func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> HotMicItemReaction {
+        if let reactionEmojiOverride = owner.reactionEmojiOverride {
+            return .init(emoji: reactionEmojiOverride, count: owner.fireCount, reactedByViewer: isReacted)
+        }
         guard emoji == "🔥" else { throw HMInteractionError.unsupportedAction }
         if owner.fireReacted != isReacted {
             owner.fireCount = max(0, owner.fireCount + (isReacted ? 1 : -1))
@@ -434,6 +438,19 @@ import HotMicCore
             _ = try await unavailable.setReaction("🔥", isReacted: true, for: plain)
             XCTFail("Item membership stays unsupported until the factory advertises it")
         } catch { XCTAssertTrue(error is HMInteractionError) }
+        unavailable.didBecomeCurrent(plain)
+        await waitUntil { idle.sessions["plain"] != nil && unavailable.connectionState(for: plain) == .connected }
+        let idleSession = idle.latest("plain")
+        idleSession.continuation.yield(.itemReaction(.init(emoji: "🔥", count: 9, reactedByViewer: true)))
+        idleSession.continuation.yield(.liveComment(idleSession.chat("hidden", at: 4), totalCount: 4))
+        idleSession.continuation.yield(.connection(.reconnecting(attempt: 1)))
+        await waitUntil { unavailable.connectionState(for: plain) == .reconnecting(attempt: 1) }
+        let hidden = HMEngagement(item: plain, timeline: unavailable.timeline(for: plain), source: unavailable)
+        unavailable.engagementDidLoad(hidden)
+        XCTAssertNil(hidden.reactionSummary(for: "🔥"))
+        XCTAssertNil(hidden.commentCount)
+        XCTAssertFalse(hidden.comments().contains { $0.id == "hidden" })
+        await leave(unavailable, idle, [plain])
 
         let factory = Sessions()
         factory.itemEngagement = [.toggleReaction, .loadComments]
@@ -476,6 +493,19 @@ import HotMicCore
         XCTAssertEqual(again.commentCount, 3)
         XCTAssertTrue(again.comments().contains { $0.id == "live" })
         XCTAssertFalse(again.comments().contains { $0.id == "newer" }, "Paged rows reload through comments(for:before:)")
+        session.continuation.yield(.messageDeleted("live"))
+        await waitUntil { !again.comments().contains { $0.id == "live" } }
+        XCTAssertNil(timeline.liveComments["live"])
+        let afterDeletion = HMEngagement(item: item, timeline: timeline, source: source, mediaClock: { 7 })
+        source.engagementDidLoad(afterDeletion)
+        XCTAssertFalse(afterDeletion.comments().contains { $0.id == "live" })
+        factory.reactionEmojiOverride = "👍"
+        do {
+            _ = try await source.setReaction("🔥", isReacted: true, for: item)
+            XCTFail("A summary for a different emoji must not be stored")
+        } catch { XCTAssertTrue(error is HMInteractionError) }
+        XCTAssertEqual(timeline.itemReactions["🔥"]?.count, 4)
+        XCTAssertNil(timeline.itemReactions["👍"])
         await leave(source, factory, [item])
     }
 
