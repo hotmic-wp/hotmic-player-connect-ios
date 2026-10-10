@@ -4,7 +4,7 @@ Dir.chdir(__dir__) do
   project = Xcodeproj::Project.new('HotMicExamples.xcodeproj')
   player = project.new(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference)
   player.repositoryURL = 'https://github.com/hotmic-wp/hotmic-player-ios'
-  player.requirement = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '1.0.0-rc.3' }
+  player.requirement = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '1.1.0-alpha.1' }
   core = project.new(Xcodeproj::Project::Object::XCRemoteSwiftPackageReference)
   core.repositoryURL = 'https://github.com/hotmic-wp/hotmic-core-ios'
   core.requirement = { 'kind' => 'upToNextMajorVersion', 'minimumVersion' => '1.0.2' }
