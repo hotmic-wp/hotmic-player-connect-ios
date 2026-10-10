@@ -9,7 +9,7 @@ let package = Package(
         .library(name: "HotMicPlayerConnectTesting", targets: ["HotMicPlayerConnectTesting"])
     ],
     dependencies: [
-        .package(url: "https://github.com/hotmic-wp/hotmic-player-ios", from: "1.0.0-rc.3"),
+        .package(url: "https://github.com/hotmic-wp/hotmic-player-ios", from: "1.1.0-alpha.1"),
         .package(url: "https://github.com/hotmic-wp/hotmic-core-ios", from: "1.0.2")
     ],
     targets: [

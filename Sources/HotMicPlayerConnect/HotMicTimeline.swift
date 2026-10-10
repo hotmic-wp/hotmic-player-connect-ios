@@ -10,6 +10,11 @@ import HotMicPlayer
     weak var engagement: HMEngagement? { didSet { observeDurationHint() } }
     var polls: [String: HMPoll] = [:]
     var messages: [String: _HotMicChat] = [:]
+    var itemReactions: [String: HMItemReactionSummary] = [:]
+    var commentCount: Int?
+    var liveComments: [String: HMTimelineEvent] = [:]
+    var liveCommentOrder: [String] = []
+    static let liveCommentCapacity = 512
     private var rawPolls: [String: _HotMicPoll] = [:]
     private var messageOrder: [String] = []
     private var pollOrder: [String] = []
@@ -67,6 +72,17 @@ import HotMicPlayer
             messages[id] = nil; ownOffsets[id] = nil; acceptedIDs.remove(id)
             if byID.removeValue(forKey: id) != nil { batchChanged = true }
         }
+    }
+    func rememberLiveComment(_ event: HMTimelineEvent) {
+        if liveComments[event.id] == nil { liveCommentOrder.append(event.id) }
+        liveComments[event.id] = event
+        while liveCommentOrder.count > Self.liveCommentCapacity {
+            liveComments[liveCommentOrder.removeFirst()] = nil
+        }
+    }
+    func removeLiveComment(_ id: String) {
+        liveComments[id] = nil
+        liveCommentOrder.removeAll { $0 == id }
     }
     func remember(_ poll: _HotMicPoll) {
         if rawPolls[poll.id] == nil { pollOrder.append(poll.id) }

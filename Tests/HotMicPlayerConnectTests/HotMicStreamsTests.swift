@@ -83,11 +83,8 @@ final class HotMicStreamsTests: XCTestCase {
         }
         calls = await client.streamCalls
         XCTAssertEqual(calls, 5, "Unsupported namespaces must not fetch")
-    }
-
-    func testTransportErrorsArePropagated() async {
-        let resolver = HotMicItemResolver(client: FakeClient(fails: true))
-        do { _ = try await resolver.resolve(.init(namespace: "hotmic", id: "one")); XCTFail("Expected transport error") }
+        let failing = HotMicItemResolver(client: FakeClient(fails: true))
+        do { _ = try await failing.resolve(.init(namespace: "hotmic", id: "one")); XCTFail("Expected transport error") }
         catch { XCTAssertEqual((error as? URLError)?.code, .notConnectedToInternet) }
     }
 

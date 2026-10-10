@@ -17,6 +17,10 @@ import HotMicCore
     var heldStopIDs: Set<String> = []
     var stopGates: [String: CheckedContinuation<Void, Never>] = [:]
     var holdStarts: Set<String> = []
+    var itemEngagement: HMEngagementCapabilities = []
+    var fireCount = 4
+    var fireReacted = false
+    var reactionEmojiOverride: String?
     let origin = Date(timeIntervalSince1970: 1000)
     func makeSession(streamID: String) -> any HotMicSession {
         let session = Session(id: streamID, owner: self)
@@ -51,7 +55,9 @@ import HotMicCore
         continuation.yield(.connection(.connected))
         if owner.holdStarts.contains(id) { await withCheckedContinuation { startGate = $0 } }
         return HotMicSessionSnapshot(liveDate: owner.missingOrigins.contains(id) ? nil : owner.origin, duration: owner.missingDurations.contains(id) ? nil : 42, userID: "viewer",
-                                   messages: [chat("history", at: 5, counts: ["👍": 2])], polls: [poll()])
+                                   messages: [chat("history", at: 5, counts: ["👍": 2])], polls: [poll()],
+                                   itemReactions: owner.itemEngagement.contains(.toggleReaction) ? [.init(emoji: "🔥", count: owner.fireCount, reactedByViewer: owner.fireReacted)] : [],
+                                   commentCount: owner.itemEngagement.contains(.loadComments) ? 2 : nil)
     }
     func stop() async {
         guard !stopped else { return }
@@ -66,6 +72,22 @@ import HotMicCore
     }
     func addReaction(_ type: String, to messageID: String) async throws -> HotMicMessageReaction {
         .init(messageID: messageID, userID: "viewer", type: type)
+    }
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> HotMicItemReaction {
+        if let reactionEmojiOverride = owner.reactionEmojiOverride {
+            return .init(emoji: reactionEmojiOverride, count: owner.fireCount, reactedByViewer: isReacted)
+        }
+        guard emoji == "🔥" else { throw HMInteractionError.unsupportedAction }
+        if owner.fireReacted != isReacted {
+            owner.fireCount = max(0, owner.fireCount + (isReacted ? 1 : -1))
+            owner.fireReacted = isReacted
+        }
+        return .init(emoji: "🔥", count: owner.fireCount, reactedByViewer: owner.fireReacted)
+    }
+    func comments(before cursor: String?) async throws -> HotMicCommentPage {
+        if cursor == nil { return .init(comments: [chat("newer", at: 20)], olderCursor: "old", totalCount: 2) }
+        if cursor == "old" { return .init(comments: [chat("older", at: 1)], olderCursor: nil, totalCount: nil) }
+        throw HMInteractionError.unsupportedAction
     }
     func vote(pollID: String, optionID: String) async throws {
         votes.append(optionID); continuation.yield(.poll(poll(vote: optionID)))
@@ -404,6 +426,87 @@ import HotMicCore
         XCTAssertEqual(factory.sessions["retry"]?.count, 5, "Credential failures must not retry")
         await leave(source, factory, [item])
         XCTAssertLessThanOrEqual(factory.maximum, 2)
+    }
+
+    func testItemMembershipAndCommentPagingStayOffTheReplayTimeline() async throws {
+        let idle = Sessions()
+        let unavailable = HotMicInteractionSource(factory: idle, nextSessionDelay: 0)
+        let plain = HMMediaItem.hotmicStream("plain")
+        XCTAssertFalse(unavailable.capabilities(for: plain).contains(.toggleReaction))
+        XCTAssertFalse(unavailable.capabilities(for: plain).contains(.loadComments))
+        do {
+            _ = try await unavailable.setReaction("🔥", isReacted: true, for: plain)
+            XCTFail("Item membership stays unsupported until the factory advertises it")
+        } catch { XCTAssertTrue(error is HMInteractionError) }
+        unavailable.didBecomeCurrent(plain)
+        await waitUntil { idle.sessions["plain"] != nil && unavailable.connectionState(for: plain) == .connected }
+        let idleSession = idle.latest("plain")
+        idleSession.continuation.yield(.itemReaction(.init(emoji: "🔥", count: 9, reactedByViewer: true)))
+        idleSession.continuation.yield(.liveComment(idleSession.chat("hidden", at: 4), totalCount: 4))
+        idleSession.continuation.yield(.connection(.reconnecting(attempt: 1)))
+        await waitUntil { unavailable.connectionState(for: plain) == .reconnecting(attempt: 1) }
+        let hidden = HMEngagement(item: plain, timeline: unavailable.timeline(for: plain), source: unavailable)
+        unavailable.engagementDidLoad(hidden)
+        XCTAssertNil(hidden.reactionSummary(for: "🔥"))
+        XCTAssertNil(hidden.commentCount)
+        XCTAssertFalse(hidden.comments().contains { $0.id == "hidden" })
+        await leave(unavailable, idle, [plain])
+
+        let factory = Sessions()
+        factory.itemEngagement = [.toggleReaction, .loadComments]
+        let item = HMMediaItem.hotmicStream("social")
+        let source = HotMicInteractionSource(factory: factory, nextSessionDelay: 0)
+        XCTAssertTrue(source.capabilities(for: item).isSuperset(of: [.sendChat, .reactToMessage, .vote, .toggleReaction, .loadComments]))
+        XCTAssertFalse(source.capabilities(for: item).contains(.reactToStream))
+        let foreign = HMMediaItem(id: "foreign", url: URL(string: "https://example.com/foreign.mp4")!)
+        XCTAssertEqual(source.capabilities(for: foreign), .readOnly)
+        let timeline = source.timeline(for: item) as! HotMicTimeline
+        let engagement = HMEngagement(item: item, timeline: timeline, source: source, mediaClock: { 7 })
+        source.engagementDidLoad(engagement)
+        source.didBecomeCurrent(item)
+        await waitUntil { engagement.reactionSummary(for: "🔥")?.count == 4 && engagement.commentCount == 2 }
+        let replay = timeline.events(in: 0...42).map(\.id)
+        XCTAssertEqual(replay, ["history"])
+        try await engagement.toggleReaction("🔥")
+        let added = try XCTUnwrap(engagement.reactionSummary(for: "🔥"))
+        XCTAssertEqual(added.count, 5)
+        XCTAssertTrue(added.reactedByViewer)
+        try await engagement.toggleReaction("🔥")
+        let removed = try XCTUnwrap(engagement.reactionSummary(for: "🔥"))
+        XCTAssertEqual(removed.count, 4)
+        XCTAssertFalse(removed.reactedByViewer)
+        try await engagement.loadComments()
+        try await engagement.loadComments()
+        XCTAssertEqual(engagement.comments().map(\.id), ["older", "newer"])
+        XCTAssertEqual(engagement.commentCount, 2, "A page without a total keeps the known count")
+        XCTAssertNil(engagement.olderCommentsCursor)
+        XCTAssertEqual(timeline.events(in: 0...42).map(\.id), replay)
+        XCTAssertFalse(timeline.messages.keys.contains("older"))
+        let session = factory.latest("social")
+        session.continuation.yield(.liveComment(session.chat("live", at: 30), totalCount: 3))
+        await waitUntil { engagement.comments().contains { $0.id == "live" } && engagement.commentCount == 3 }
+        XCTAssertEqual(timeline.events(in: 0...42).map(\.id), replay)
+        XCTAssertNil(timeline.messages["live"])
+        let again = HMEngagement(item: item, timeline: timeline, source: source, mediaClock: { 7 })
+        source.engagementDidLoad(again)
+        XCTAssertEqual(again.reactionSummary(for: "🔥")?.reactedByViewer, false)
+        XCTAssertEqual(again.commentCount, 3)
+        XCTAssertTrue(again.comments().contains { $0.id == "live" })
+        XCTAssertFalse(again.comments().contains { $0.id == "newer" }, "Paged rows reload through comments(for:before:)")
+        session.continuation.yield(.messageDeleted("live"))
+        await waitUntil { !again.comments().contains { $0.id == "live" } }
+        XCTAssertNil(timeline.liveComments["live"])
+        let afterDeletion = HMEngagement(item: item, timeline: timeline, source: source, mediaClock: { 7 })
+        source.engagementDidLoad(afterDeletion)
+        XCTAssertFalse(afterDeletion.comments().contains { $0.id == "live" })
+        factory.reactionEmojiOverride = "👍"
+        do {
+            _ = try await source.setReaction("🔥", isReacted: true, for: item)
+            XCTFail("A summary for a different emoji must not be stored")
+        } catch { XCTAssertTrue(error is HMInteractionError) }
+        XCTAssertEqual(timeline.itemReactions["🔥"]?.count, 4)
+        XCTAssertNil(timeline.itemReactions["👍"])
+        await leave(source, factory, [item])
     }
 
 }

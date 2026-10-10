@@ -1,11 +1,19 @@
 import Foundation
 import HotMicCore
+import HotMicPlayer
 import HotMicPlayerConnect
 
 /// Creates fresh, single-use engagement sessions. Access on the main actor.
 @MainActor public protocol HotMicSessionFactory {
     /// Constructs an inert session; networking begins at start(). Main actor.
     func makeSession(streamID: String) -> any HotMicSession
+    /// Item fire membership and comment paging this factory can serve. Defaults to none.
+    var itemEngagement: HMEngagementCapabilities { get }
+}
+
+public extension HotMicSessionFactory {
+    /// Authenticated-equivalent fakes omit item membership and comment paging until they opt in.
+    var itemEngagement: HMEngagementCapabilities { [] }
 }
 
 /// An injectable single-use Core engagement session. All access is on the main actor.
@@ -20,8 +28,23 @@ import HotMicPlayerConnect
     func sendChat(_ text: String) async throws -> HotMicChat
     /// Adds a Core reaction type (like/fire/laugh/anger/sadness) to a message.
     func addReaction(_ type: String, to messageID: String) async throws -> HotMicMessageReaction
+    /// Sets membership in an item reaction count and returns authoritative totals.
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> HotMicItemReaction
+    /// Loads newest comments for nil, or older comments for an opaque cursor.
+    func comments(before cursor: String?) async throws -> HotMicCommentPage
     /// Submits the selected poll option; emit a poll event to reconcile the viewer vote.
     func vote(pollID: String, optionID: String) async throws
+}
+
+public extension HotMicSession {
+    /// Fakes that do not model item membership throw, matching HotMicCore 1.0.2.
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> HotMicItemReaction {
+        throw HMInteractionError.unsupportedAction
+    }
+    /// Fakes that do not model comment paging throw, matching HotMicCore 1.0.2.
+    func comments(before cursor: String?) async throws -> HotMicCommentPage {
+        throw HMInteractionError.unsupportedAction
+    }
 }
 
 /// Raw Core chat with wall-clock creation time. Sendable across tasks.
@@ -59,7 +82,34 @@ public struct HotMicMessageReaction: Sendable {
     public init(messageID: String, userID: String, type: String) {
         self.messageID = messageID; self.userID = userID; self.type = type
     }
+}
 
+/// Authoritative item reaction membership. Independent of timed stream reactions. Sendable across tasks.
+public struct HotMicItemReaction: Sendable, Equatable {
+    /// Player emoji, such as fire.
+    public let emoji: String
+    /// Total memberships, including the viewer. Negative input is clamped to zero.
+    public let count: Int
+    /// Whether the signed-in viewer belongs to this count.
+    public let reactedByViewer: Bool
+    /// Creates a transport-independent value for an injected session.
+    public init(emoji: String, count: Int, reactedByViewer: Bool) {
+        self.emoji = emoji; self.count = max(0, count); self.reactedByViewer = reactedByViewer
+    }
+}
+
+/// One page of item comments, separate from media-clock replay. Sendable across tasks.
+public struct HotMicCommentPage: Sendable {
+    /// Comments in this page. The adapter does not place them on the VOD timeline.
+    public let comments: [HotMicChat]
+    /// Opaque cursor for an older page, or nil at the end.
+    public let olderCursor: String?
+    /// Authoritative item comment count, or nil when this page does not provide one.
+    public let totalCount: Int?
+    /// Creates a transport-independent page. A nil total leaves the known count unchanged.
+    public init(comments: [HotMicChat], olderCursor: String? = nil, totalCount: Int? = nil) {
+        self.comments = comments; self.olderCursor = olderCursor; self.totalCount = totalCount.map { max(0, $0) }
+    }
 }
 
 /// Raw Core poll state. Sendable across tasks.
@@ -108,11 +158,17 @@ public struct HotMicSessionSnapshot: Sendable {
     public let messages: [HotMicChat]
     /// Raw polls returned at startup.
     public let polls: [HotMicFixturePoll]
+    /// Known item reaction totals at startup. Empty means the backend has none.
+    public let itemReactions: [HotMicItemReaction]
+    /// Known item comment count at startup, or nil when unknown.
+    public let commentCount: Int?
     /// Creates a transport-independent value for an injected session.
     public init(liveDate: Date?, duration: TimeInterval?, userID: String,
-                messages: [HotMicChat] = [], polls: [HotMicFixturePoll] = []) {
+                messages: [HotMicChat] = [], polls: [HotMicFixturePoll] = [],
+                itemReactions: [HotMicItemReaction] = [], commentCount: Int? = nil) {
         self.liveDate = liveDate; self.duration = duration; self.userID = userID
         self.messages = messages; self.polls = polls
+        self.itemReactions = itemReactions; self.commentCount = commentCount
     }
 }
 
@@ -138,4 +194,8 @@ public enum HotMicSessionEvent: Sendable {
     case poll(HotMicFixturePoll)
     /// A moderator deleted a poll by server ID.
     case pollDeleted(String)
+    /// Authoritative item reaction membership changed.
+    case itemReaction(HotMicItemReaction)
+    /// An item comment arrived outside the media-clock replay timeline.
+    case liveComment(HotMicChat, totalCount: Int?)
 }

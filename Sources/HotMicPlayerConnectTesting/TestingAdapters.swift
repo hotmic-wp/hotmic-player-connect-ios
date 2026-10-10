@@ -1,5 +1,6 @@
 import Foundation
 import HotMicCore
+import HotMicPlayer
 import HotMicPlayerConnect
 
 public extension HotMicItemResolver {
@@ -40,6 +41,7 @@ private struct StreamClientBridge: _HotMicStreamClient {
 
 @MainActor private struct SessionFactoryBridge: _HotMicSessionFactory {
     let base: any HotMicSessionFactory
+    var itemEngagement: HMEngagementCapabilities { base.itemEngagement }
     func makeSession(streamID: String) -> any _HotMicSession {
         SessionBridge(base: base.makeSession(streamID: streamID))
     }
@@ -69,6 +71,12 @@ private struct StreamClientBridge: _HotMicStreamClient {
     func addReaction(_ type: String, to messageID: String) async throws -> _HotMicMessageReaction {
         try await base.addReaction(type, to: messageID).runtimeValue
     }
+    func setItemReaction(_ emoji: String, isReacted: Bool) async throws -> _HotMicItemReaction {
+        try await base.setItemReaction(emoji, isReacted: isReacted).runtimeValue
+    }
+    func comments(before cursor: String?) async throws -> _HotMicCommentPage {
+        try await base.comments(before: cursor).runtimeValue
+    }
     func vote(pollID: String, optionID: String) async throws { try await base.vote(pollID: pollID, optionID: optionID) }
 }
 
@@ -83,6 +91,14 @@ extension HotMicChat {
 extension HotMicMessageReaction {
     var runtimeValue: _HotMicMessageReaction { .init(messageID: messageID, userID: userID, type: type) }
 }
+extension HotMicItemReaction {
+    var runtimeValue: _HotMicItemReaction { .init(emoji: emoji, count: count, reactedByViewer: reactedByViewer) }
+}
+extension HotMicCommentPage {
+    var runtimeValue: _HotMicCommentPage {
+        .init(comments: comments.map(\.runtimeValue), olderCursor: olderCursor, totalCount: totalCount)
+    }
+}
 extension HotMicFixturePoll {
     var runtimeValue: _HotMicPoll {
         .init(id: id, question: question, createdAt: createdAt, closed: closed, viewerVote: viewerVote,
@@ -92,7 +108,8 @@ extension HotMicFixturePoll {
 extension HotMicSessionSnapshot {
     var runtimeValue: _HotMicSessionSnapshot {
         .init(liveDate: liveDate, duration: duration, userID: userID,
-              messages: messages.map(\.runtimeValue), polls: polls.map(\.runtimeValue))
+              messages: messages.map(\.runtimeValue), polls: polls.map(\.runtimeValue),
+              itemReactions: itemReactions.map(\.runtimeValue), commentCount: commentCount)
     }
 }
 extension HotMicSessionEvent {
@@ -108,6 +125,8 @@ extension HotMicSessionEvent {
         case .reactionDeleted(let reaction): return .reactionDeleted(reaction.runtimeValue)
         case .poll(let poll): return .poll(poll.runtimeValue)
         case .pollDeleted(let id): return .pollDeleted(id)
+        case .itemReaction(let reaction): return .itemReaction(reaction.runtimeValue)
+        case .liveComment(let chat, let totalCount): return .liveComment(chat.runtimeValue, totalCount: totalCount)
         }
     }
 }

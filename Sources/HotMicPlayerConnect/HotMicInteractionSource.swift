@@ -61,9 +61,14 @@ import HotMicPlayer
 
     /// Connection failures affect engagement only. Transient startup failures retry while current.
     public func connectionState(for item: HMMediaItem) -> ConnectionState { states[item.id] ?? .idle }
-    /// Returns chat, message reaction and voting support for HotMic items. Main actor.
+    /// Returns chat, message reaction and voting support for HotMic items.
+    /// Item fire membership and comment paging are added only when the session backend provides them.
+    /// Main actor.
     public func capabilities(for item: HMMediaItem) -> HMEngagementCapabilities {
-        streamID(for: item) == nil ? .readOnly : [.sendChat, .reactToMessage, .vote]
+        guard streamID(for: item) != nil else { return .readOnly }
+        var capabilities: HMEngagementCapabilities = [.sendChat, .reactToMessage, .vote]
+        capabilities.formUnion(factory.itemEngagement.intersection([.toggleReaction, .loadComments]))
+        return capabilities
     }
     /// Returns an inert timeline; never opens a session. Main actor.
     public func timeline(for item: HMMediaItem) -> any HMStreamTimeline { store(for: item) }
@@ -75,6 +80,11 @@ import HotMicPlayer
         timeline.engagement = engagement
         for poll in timeline.polls.values { engagement.upsertPoll(poll) }
         for chat in timeline.messages.values { engagement.updateReactions(chat.counts, forMessage: chat.id) }
+        for (emoji, summary) in timeline.itemReactions { engagement.updateReactionSummary(summary, for: emoji) }
+        if let count = timeline.commentCount { engagement.updateCommentCount(count) }
+        for id in timeline.liveCommentOrder {
+            if let event = timeline.liveComments[id] { engagement.upsertComment(event) }
+        }
         // Deletions can arrive during next-item preparation, before the UI asks for engagement.
         for event in timeline.pendingDeletions { applyDeletion(event, to: timeline) }
         timeline.pendingDeletions.removeAll()
@@ -122,6 +132,31 @@ import HotMicPlayer
         let slot = try activeSlot(for: item)
         let reaction = try await slot.session.addReaction(type, to: messageID)
         applyReaction(reaction, added: true, to: slot)
+    }
+    /// Sets item reaction membership and returns authoritative totals. Main actor.
+    /// HotMicCore 1.0.2 cannot serve this; only a session factory that advertises `.toggleReaction` can.
+    public func setReaction(_ emoji: String, isReacted: Bool, for item: HMMediaItem) async throws -> HMItemReactionSummary {
+        guard factory.itemEngagement.contains(.toggleReaction) else { throw HMInteractionError.unsupportedAction }
+        let slot = try activeSlot(for: item)
+        let reaction = try await slot.session.setItemReaction(emoji, isReacted: isReacted)
+        guard reaction.emoji == emoji else { throw HMInteractionError.unsupportedAction }
+        let summary = HMItemReactionSummary(count: reaction.count, reactedByViewer: reaction.reactedByViewer)
+        slot.timeline.itemReactions[emoji] = summary
+        slot.timeline.engagement?.updateReactionSummary(summary, for: emoji)
+        return summary
+    }
+    /// Loads an item comment page without placing those comments on the VOD timeline. Main actor.
+    /// HotMicCore 1.0.2 cannot page chat history; only a session factory that advertises `.loadComments` can.
+    public func comments(for item: HMMediaItem, before cursor: String?) async throws -> HMCommentPage {
+        guard factory.itemEngagement.contains(.loadComments) else { throw HMInteractionError.unsupportedAction }
+        let slot = try activeSlot(for: item)
+        let page = try await slot.session.comments(before: cursor)
+        if let totalCount = page.totalCount {
+            let count = max(0, totalCount)
+            slot.timeline.commentCount = count
+            slot.timeline.engagement?.updateCommentCount(count)
+        }
+        return HMCommentPage(comments: page.comments.map(commentEvent), olderCursor: page.olderCursor, totalCount: page.totalCount)
     }
     /// Submits a poll option; Core poll updates reconcile the result. Main actor.
     public func vote(pollID: String, optionID: String, for item: HMMediaItem) async throws {
@@ -211,6 +246,7 @@ import HotMicPlayer
                     snapshot.polls.forEach { self.upsert($0, in: slot) }
                     slot.ready = true
                     self.attempts[item.id] = nil
+                    self.applyItemState(snapshot.itemReactions, commentCount: snapshot.commentCount, to: slot.timeline)
                     let queued = slot.queued; slot.queued.removeAll()
                     for event in queued { self.consume(event, itemID: item.id, slot: slot) }
                 } catch {
@@ -284,15 +320,39 @@ import HotMicPlayer
             reactions.forEach { applyReaction($0, added: true, to: slot) }
         case .messageDeleted(let id):
             slot.timeline.remove(id)
+            slot.timeline.removeLiveComment(id)
             deletion(event, timeline: slot.timeline)
         case .reactionDeleted(let reaction): applyReaction(reaction, added: false, to: slot)
         case .poll(let poll): upsert(poll, in: slot)
+        case .itemReaction(let reaction) where factory.itemEngagement.contains(.toggleReaction):
+            applyItemState([reaction], commentCount: nil, to: slot.timeline)
+        case .liveComment(let chat, let totalCount) where factory.itemEngagement.contains(.loadComments):
+            let event = commentEvent(chat)
+            slot.timeline.rememberLiveComment(event)
+            slot.timeline.engagement?.upsertComment(event)
+            applyItemState([], commentCount: totalCount, to: slot.timeline)
         case .pollDeleted(let id):
             slot.timeline.removePoll(id)
             deletion(event, timeline: slot.timeline)
         case .stream(let date, let duration):
             slot.timeline.retime(liveDate: date, duration: duration)
         default: break
+        }
+    }
+    private func commentEvent(_ chat: _HotMicChat) -> HMTimelineEvent {
+        HMTimelineEvent(id: chat.id, offset: 0, kind: .chat, author: chat.author, text: chat.text,
+                        avatarURL: chat.avatar, wallTime: chat.createdAt, reactions: chat.counts.filter { $0.value > 0 })
+    }
+    private func applyItemState(_ reactions: [_HotMicItemReaction], commentCount: Int?, to timeline: HotMicTimeline) {
+        for reaction in reactions {
+            let summary = HMItemReactionSummary(count: reaction.count, reactedByViewer: reaction.reactedByViewer)
+            timeline.itemReactions[reaction.emoji] = summary
+            timeline.engagement?.updateReactionSummary(summary, for: reaction.emoji)
+        }
+        if let commentCount {
+            let count = max(0, commentCount)
+            timeline.commentCount = count
+            timeline.engagement?.updateCommentCount(count)
         }
     }
     private func receive(_ messages: [_HotMicChat], in slot: Slot) {
